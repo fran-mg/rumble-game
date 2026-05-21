@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "articulategame",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "platforms": ["ios", "android"],
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -20,20 +20,9 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      }
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-sqlite",
-      "expo-font"
-    ],
+    "plugins": ["expo-router", "expo-sqlite", "expo-font"],
     "experiments": {
       "typedRoutes": true
     }

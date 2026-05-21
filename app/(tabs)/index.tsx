@@ -1,31 +1,14 @@
-import { StyleSheet } from 'react-native';
-
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+import { LinearGradient } from "expo-linear-gradient";
+import { Text } from "react-native";
 
 export default function TabOneScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
-    </View>
+    <LinearGradient
+      colors={["#9333ea", "#3b82f6"]}
+      className="flex-1 items-center justify-center"
+    >
+      <Text className="text-5xl font-bold text-white mb-4">Articulate</Text>
+      <Text className="text-xl text-white/80">Party Game Reimagined</Text>
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

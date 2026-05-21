@@ -1,6 +1,6 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
 
 # Expo
@@ -21,21 +21,40 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# JetBrains / PyCharm
+# Ignores all PyCharm caching, layout, modules, and project settings
+.idea/
+
+# VS Code
+# Keeps shared settings but blocks local workspace states or temporary overrides
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/*.code-workspace
+.vscode/.react/
+# Explicitly allow your team to share the Tailwind configuration
+!.vscode/settings.json
+
+# Debug & Project Summaries
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+project_summary.txt
+package-list.txt
 
 # macOS
 .DS_Store
 *.pem
 
-# local env files
+# Local env files
 .env*.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
+# Generated native folders
 /ios
 /android
+
+# Personal
+ME_NOTES.md
+codebase_dump.txt
