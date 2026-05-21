@@ -1,19 +1,17 @@
 import { create } from "zustand";
 import { dbHelpers } from "../utils/database";
 
-interface Team {
+export interface Team {
   id: number;
   name: string;
   color: string;
-  icon: string;
+  icon: string; // Will store clean lucide icon string names like 'Users', 'Target', 'Trophy'
   score?: number;
 }
 
 interface TeamState {
   teams: Team[];
   currentTeamIndex: number;
-
-  // Actions
   loadTeams: () => Promise<void>;
   createTeam: (name: string, color: string, icon: string) => Promise<void>;
   deleteTeam: (teamId: number) => Promise<void>;
@@ -33,14 +31,14 @@ export const useTeamStore = create<TeamState>((set, get) => ({
   currentTeamIndex: 0,
 
   loadTeams: async () => {
-    const teams = await dbHelpers.getAllTeams();
-    set({ teams });
+    const data = await dbHelpers.getAllTeams();
+    set({ teams: data as Team[] });
   },
 
   createTeam: async (
     name: string,
     color: string = "#3B82F6",
-    icon: string = "👥",
+    icon: string = "Users",
   ) => {
     await dbHelpers.createTeam(name, color, icon);
     await get().loadTeams();
@@ -67,6 +65,7 @@ export const useTeamStore = create<TeamState>((set, get) => ({
 
   nextTeam: () => {
     const { teams, currentTeamIndex } = get();
+    if (teams.length === 0) return;
     set({ currentTeamIndex: (currentTeamIndex + 1) % teams.length });
   },
 

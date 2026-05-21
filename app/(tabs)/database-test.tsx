@@ -1,133 +1,204 @@
-import { useEffect, useState } from "react";
-import {
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { dbHelpers } from "../../utils/database";
+import * as LucideIcons from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useDeckStore } from "../../stores/useDeckStore";
+import { useTeamStore } from "../../stores/useTeamStore";
+import { dbHelpers, initDatabase } from "../../utils/database";
 
 export default function DatabaseTestScreen() {
-  const [decks, setDecks] = useState<any[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
-  const [settings, setSettings] = useState<string>("");
+  const { teams, loadTeams, createTeam, deleteTeam } = useTeamStore();
+  const { decks, loadDecks, createDeck, deleteDeck } = useDeckStore();
+  const [dbStatus, setDbStatus] = useState<
+    "initializing" | "connected" | "error"
+  >("initializing");
 
   useEffect(() => {
-    if (Platform.OS !== "web") {
-      loadData();
-    }
+    runInit();
   }, []);
 
-  const loadData = async () => {
-    const allDecks = await dbHelpers.getAllDecks();
-    const allTeams = await dbHelpers.getAllTeams();
-    const timerSetting = await dbHelpers.getSetting("timer_duration");
-
-    setDecks(allDecks);
-    setTeams(allTeams);
-    setSettings(timerSetting || "not set");
-  };
-
-  const createTestDeck = async () => {
-    const deckId = await dbHelpers.createDeck(
-      "Test Animals",
-      "Nature",
-      "user-created",
-    );
-    if (deckId) {
-      await dbHelpers.createCard(deckId, "Elephant", [
-        "trunk",
-        "grey",
-        "big",
-        "Africa",
-        "mammal",
-      ]);
-      await dbHelpers.createCard(deckId, "Penguin", [
-        "bird",
-        "Antarctica",
-        "waddle",
-        "fish",
-        "tuxedo",
-      ]);
+  const runInit = async () => {
+    try {
+      await initDatabase();
+      setDbStatus("connected");
+      await Promise.all([loadTeams(), loadDecks()]);
+    } catch (e) {
+      setDbStatus("error");
+      console.error(e);
     }
-    await loadData();
   };
 
-  const createTestTeam = async () => {
-    await dbHelpers.createTeam("Test Team", "#FF0000", "");
-    await loadData();
-  };
+  const handleAddSampleData = async () => {
+    try {
+      // Add a clean test team without tacky emojis
+      const teamNames = ["Alpha Squad", "Beta Brains", "Delta Force"];
+      const randomName =
+        teamNames[Math.floor(Math.random() * teamNames.length)] +
+        " " +
+        Math.floor(Math.random() * 100);
+      await createTeam(randomName, "#10B981", "Target");
 
-  if (Platform.OS === "web") {
-    return (
-      <View className="flex-1 items-center justify-center bg-gray-100 p-6">
-        <Text className="text-2xl font-bold text-gray-700">
-          Database Not Available on Web
-        </Text>
-        <Text className="text-gray-500 mt-2 text-center">
-          This app requires native SQLite. Please test on iOS or Android via
-          Expo Go.
-        </Text>
-      </View>
-    );
-  }
+      // Add a clean sample deck
+      const deckId = await dbHelpers.createDeck(
+        `Pop Culture Vol. ${decks.length + 1}`,
+        "Media",
+        "bundled",
+        "Tv",
+      );
+      if (deckId) {
+        await dbHelpers.createCard(
+          deckId,
+          "Batman",
+          ["Robin", "Gotham", "Joker", "Caped"],
+          "easy",
+        );
+        await dbHelpers.createCard(
+          deckId,
+          "Inception",
+          ["Dream", "Leonardo", "Spinning", "Top"],
+          "hard",
+        );
+      }
+
+      await Promise.all([loadTeams(), loadDecks()]);
+      Alert.alert("Success", "Seeded clean sample entities securely!");
+    } catch (err) {
+      Alert.alert("Error", "Failed to add test records.");
+    }
+  };
 
   return (
-    <ScrollView className="flex-1 bg-gray-100">
-      <View className="p-6">
-        <Text className="text-3xl font-bold mb-6">Database Test</Text>
-
-        {/* Decks Section */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow">
-          <Text className="text-xl font-bold mb-2">Decks ({decks.length})</Text>
-          {decks.map((deck) => (
-            <View key={deck.id} className="bg-gray-100 p-3 rounded mb-2">
-              <Text className="font-bold">{deck.name}</Text>
-              <Text className="text-sm text-gray-600">
-                Category: {deck.category} | Source: {deck.source} | Cards:{" "}
-                {deck.card_count}
-              </Text>
-            </View>
-          ))}
-          <TouchableOpacity
-            onPress={createTestDeck}
-            className="bg-blue-500 p-3 rounded mt-2 active:bg-blue-600"
-          >
-            <Text className="text-white text-center font-bold">
-              Create Test Deck
+    <SafeAreaView className="flex-1 bg-slate-950 px-4 pt-4">
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header Block */}
+        <View className="mb-6 flex-row items-center justify-between border-b border-slate-800 pb-4">
+          <View>
+            <Text className="text-2xl font-black text-white tracking-tight">
+              Core Engine
             </Text>
-          </TouchableOpacity>
+            <Text className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">
+              Hardware Diagnostics
+            </Text>
+          </View>
+          <View
+            className={`px-3 py-1.5 rounded-full flex-row items-center gap-1.5 ${dbStatus === "connected" ? "bg-emerald-500/10" : "bg-amber-500/10"}`}
+          >
+            <View
+              className={`w-2 h-2 rounded-full ${dbStatus === "connected" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}
+            />
+            <Text
+              className={`text-xs font-bold ${dbStatus === "connected" ? "text-emerald-400" : "text-amber-400"}`}
+            >
+              {dbStatus === "connected" ? "SQLITE ACTIVE" : "CONNECTING"}
+            </Text>
+          </View>
         </View>
 
-        {/* Teams Section */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow">
-          <Text className="text-xl font-bold mb-2">Teams ({teams.length})</Text>
-          {teams.map((team) => (
-            <View key={team.id} className="bg-gray-100 p-3 rounded mb-2">
-              <Text className="font-bold">{team.name}</Text>
+        {/* Metrics Overview Container */}
+        <View className="flex-row gap-4 mb-6">
+          <View className="flex-1 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+            <Text className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+              Loaded Decks
+            </Text>
+            <Text className="text-3xl font-black text-white mt-1">
+              {decks.length}
+            </Text>
+          </View>
+          <View className="flex-1 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+            <Text className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+              Active Teams
+            </Text>
+            <Text className="text-3xl font-black text-white mt-1">
+              {teams.length}
+            </Text>
+          </View>
+        </View>
+
+        {/* Diagnostic Actions */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleAddSampleData}
+          className="bg-blue-600 rounded-2xl py-4 items-center justify-center mb-8 flex-row gap-2 shadow-lg shadow-blue-500/20"
+        >
+          <LucideIcons.PlusCircle color="white" size={20} />
+          <Text className="text-white font-extrabold text-base tracking-tight">
+            Inject Sample Deck & Team
+          </Text>
+        </TouchableOpacity>
+
+        {/* Live Records Sections */}
+        <View className="mb-6">
+          <Text className="text-white text-lg font-black mb-3 px-1">
+            Decks Cache
+          </Text>
+          {decks.length === 0 ? (
+            <Text className="text-slate-500 italic text-sm px-1">
+              No decks available. Inject sample files above.
+            </Text>
+          ) : (
+            decks.map((deck) => (
               <View
-                className="w-8 h-8 rounded mt-1"
-                style={{ backgroundColor: team.color }}
-              />
-            </View>
-          ))}
-          <TouchableOpacity
-            onPress={createTestTeam}
-            className="bg-green-500 p-3 rounded mt-2 active:bg-green-600"
-          >
-            <Text className="text-white text-center font-bold">
-              Create Test Team
-            </Text>
-          </TouchableOpacity>
+                key={deck.id}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-3 mb-2.5 flex-row justify-between items-center"
+              >
+                <View className="flex-row items-center gap-3">
+                  <View className="bg-slate-800 p-2 rounded-lg">
+                    <LucideIcons.Layers color="#94A3B8" size={18} />
+                  </View>
+                  <View>
+                    <Text className="text-white font-bold text-sm">
+                      {deck.name}
+                    </Text>
+                    <Text className="text-slate-400 text-xs mt-0.5">
+                      {deck.category} • {deck.card_count} cards
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => deleteDeck(deck.id)}
+                  hitSlop={12}
+                >
+                  <LucideIcons.Trash2 color="#EF4444" size={16} />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </View>
 
-        {/* Settings Section */}
-        <View className="bg-white rounded-lg p-4 shadow">
-          <Text className="text-xl font-bold mb-2">Settings</Text>
-          <Text>Timer Duration: {settings}s</Text>
+        <View className="mb-12">
+          <Text className="text-white text-lg font-black mb-3 px-1">
+            Registered Teams
+          </Text>
+          {teams.length === 0 ? (
+            <Text className="text-slate-500 italic text-sm px-1">
+              No active teams compiled yet.
+            </Text>
+          ) : (
+            teams.map((team) => (
+              <View
+                key={team.id}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-3 mb-2.5 flex-row justify-between items-center"
+              >
+                <View className="flex-row items-center gap-3">
+                  <View
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: team.color }}
+                  />
+                  <Text className="text-white font-bold text-sm">
+                    {team.name}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => deleteTeam(team.id)}
+                  hitSlop={12}
+                >
+                  <LucideIcons.Trash2 color="#EF4444" size={16} />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
