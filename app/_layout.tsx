@@ -33,8 +33,8 @@ export default function RootLayout() {
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        {/* <Stack.Screen name="game/play" options={{ gestureEnabled: false }} /> */}
-        {/* <Stack.Screen name="game/summary" options={{ gestureEnabled: false }} /> */}
+        <Stack.Screen name="game/play" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="game/summary" options={{ gestureEnabled: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </ThemeProvider>
