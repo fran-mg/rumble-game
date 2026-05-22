@@ -22,6 +22,7 @@ export const initDatabase = async (): Promise<void> => {
         source TEXT DEFAULT 'bundled', 
         description TEXT, 
         icon TEXT DEFAULT 'Layers', 
+        color TEXT DEFAULT '#3B82F6', 
         created_at INTEGER DEFAULT (strftime('%s', 'now')), 
         updated_at INTEGER DEFAULT (strftime('%s', 'now')), 
         is_favorited INTEGER DEFAULT 0, 
@@ -60,6 +61,7 @@ export const initDatabase = async (): Promise<void> => {
       `CREATE TABLE IF NOT EXISTS games (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         mode_id INTEGER NOT NULL, 
+        status TEXT DEFAULT 'active', 
         started_at INTEGER DEFAULT (strftime('%s', 'now')), 
         ended_at INTEGER, 
         total_rounds INTEGER DEFAULT 0, 
