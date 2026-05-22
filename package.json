@@ -54,6 +54,7 @@
     "@types/react-dom": "~19.1.7",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^10.4.0",
+    "postcss": "^8.4.23",
     "prettier": "^3.8.3",
     "react-test-renderer": "19.1.0",
     "tailwindcss": "^4.1.17",

@@ -45,6 +45,8 @@ package-list.txt
 .DS_Store
 *.pem
 
+# env file
+.env
 # Local env files
 .env*.local
 

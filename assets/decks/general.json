@@ -1,0 +1,17 @@
+{
+  "name": "General Knowledge Elite",
+  "category": "General",
+  "icon": "Globe",
+  "cards": [
+    {
+      "word": "Eiffel Tower",
+      "taboo_words": ["Paris", "France", "Monument", "Tall"],
+      "difficulty": "easy"
+    },
+    {
+      "word": "Photosynthesis",
+      "taboo_words": ["Plants", "Green", "Sunlight", "Energy"],
+      "difficulty": "medium"
+    }
+  ]
+}
