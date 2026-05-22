@@ -47,7 +47,10 @@ export default function DecksScreen() {
     if (!aiPrompt.trim()) return;
     setIsGenerating(true);
 
-    const result = await generateDeckViaAI(aiPrompt);
+    const result = await generateDeckViaAI(
+      aiPrompt,
+      process.env.EXPO_PUBLIC_GROQ_API_KEY || "",
+    );
     setIsGenerating(false);
 
     if (result.success) {

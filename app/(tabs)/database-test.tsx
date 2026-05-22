@@ -1,6 +1,7 @@
 import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../stores/useDeckStore";
 import { useTeamStore } from "../../stores/useTeamStore";
@@ -83,9 +84,17 @@ export default function DatabaseTestScreen() {
           <View
             className={`px-3 py-1.5 rounded-full flex-row items-center gap-1.5 ${dbStatus === "connected" ? "bg-emerald-500/10" : "bg-amber-500/10"}`}
           >
-            <View
-              className={`w-2 h-2 rounded-full ${dbStatus === "connected" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}
-            />
+            {dbStatus === "connected" ? (
+              <Animated.View
+                key="status-active-pulse"
+                className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"
+              />
+            ) : (
+              <View
+                key="status-connecting-static"
+                className="w-2 h-2 rounded-full bg-amber-400"
+              />
+            )}
             <Text
               className={`text-xs font-bold ${dbStatus === "connected" ? "text-emerald-400" : "text-amber-400"}`}
             >
