@@ -1,194 +1,146 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { dbHelpers } from "../utils/database";
 
-type GameMode = "articulate" | "taboo" | "charades" | "password" | "boardgame";
+type GameMode = "headsup" | "taboo" | "password";
 type CardResult = "guessed" | "passed" | "skipped";
 
+interface TurnHistory {
+  cardId: number;
+  word: string;
+  result: CardResult;
+}
+
 interface GameState {
-  // Game session
-  gameId: number | null;
-  roundId: number | null;
   mode: GameMode;
   isPlaying: boolean;
   isPaused: boolean;
 
-  // Round state
+  // Match Configuration
+  teamsInGame: any[];
+  totalRounds: number;
   currentRound: number;
-  currentCardIndex: number;
-  cardsInRound: any[];
+  currentTeamIndex: number;
 
-  // Timer
+  // Scoring
+  matchScores: Record<number, number>; // teamId -> score
+  turnHistory: TurnHistory[];
+
+  // Turn State
+  cardsInRound: any[];
+  currentCardIndex: number;
   timerDuration: number;
   timeRemaining: number;
-
-  // Scores
-  roundScore: number;
-  passesUsed: number;
-  passLimit: number;
+  turnScore: number;
+  turnPasses: number;
 
   // Settings
   tiltEnabled: boolean;
-  hapticsEnabled: boolean;
-  soundEnabled: boolean;
 
   // Actions
-  startGame: (mode: GameMode, teamIds: number[]) => Promise<void>;
-  endGame: () => Promise<void>;
-  startRound: (teamId: number, cards: any[]) => Promise<void>;
-  endRound: () => Promise<void>;
-
-  recordCardResult: (
-    cardId: number,
-    result: CardResult,
-    timeSpent: number,
-  ) => Promise<void>;
+  setupMatch: (
+    mode: GameMode,
+    teams: any[],
+    duration: number,
+    cards: any[],
+  ) => void;
+  startTurn: () => void;
+  endTurn: () => void;
+  endMatch: () => void;
+  recordCardResult: (cardId: number, word: string, result: CardResult) => void;
   nextCard: () => void;
-
-  setTimerDuration: (duration: number) => void;
-  setTimeRemaining: (time: number) => void;
   decrementTime: () => void;
-
   setPaused: (paused: boolean) => void;
-  toggleTilt: () => void;
-  toggleHaptics: () => void;
-  toggleSound: () => void;
 }
 
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
-      // Initial state
-      gameId: null,
-      roundId: null,
-      mode: "articulate",
+      mode: "headsup",
       isPlaying: false,
       isPaused: false,
 
+      teamsInGame: [],
+      totalRounds: 1,
       currentRound: 1,
-      currentCardIndex: 0,
+      currentTeamIndex: 0,
+
+      matchScores: {},
+      turnHistory: [],
+
       cardsInRound: [],
-
-      timerDuration: 60,
-      timeRemaining: 60,
-
-      roundScore: 0,
-      passesUsed: 0,
-      passLimit: 3,
+      currentCardIndex: 0,
+      timerDuration: 15,
+      timeRemaining: 15,
+      turnScore: 0,
+      turnPasses: 0,
 
       tiltEnabled: true,
-      hapticsEnabled: true,
-      soundEnabled: true,
 
-      // Start a new game
-      startGame: async (mode: GameMode, teamIds: number[]) => {
-        const modeId = {
-          articulate: 1,
-          taboo: 2,
-          charades: 3,
-          password: 4,
-          boardgame: 5,
-        }[mode];
-
-        const gameId = await dbHelpers.createGame(modeId, teamIds, {
-          timerDuration: get().timerDuration,
-          passLimit: get().passLimit,
-        });
+      setupMatch: (mode, teams, duration, cards) => {
+        const initialScores: Record<number, number> = {};
+        teams.forEach((t) => (initialScores[t.id] = 0));
 
         set({
-          gameId,
           mode,
-          isPlaying: true,
+          teamsInGame: teams,
+          totalRounds: 1, // Fixed for this test
           currentRound: 1,
-          currentCardIndex: 0,
+          currentTeamIndex: 0,
+          matchScores: initialScores,
+          cardsInRound: cards, // In a real app, chunk this per turn
+          timerDuration: duration,
+          isPlaying: true,
         });
       },
 
-      // End the current game
-      endGame: async () => {
-        const { gameId } = get();
-        if (gameId) {
-          // End game will be called with winning team later
-          set({
-            gameId: null,
-            roundId: null,
-            isPlaying: false,
-            currentRound: 1,
-            currentCardIndex: 0,
-          });
-        }
+      startTurn: () => {
+        set({
+          timeRemaining: get().timerDuration,
+          currentCardIndex: 0,
+          turnScore: 0,
+          turnPasses: 0,
+          turnHistory: [],
+          isPaused: false,
+        });
       },
 
-      // Start a new round
-      startRound: async (teamId: number, cards: any[]) => {
-        const { gameId, currentRound } = get();
-        if (!gameId) return;
-
-        const roundId = await dbHelpers.createRound(
-          gameId,
+      endTurn: () => {
+        const {
+          currentTeamIndex,
+          teamsInGame,
+          turnScore,
+          matchScores,
           currentRound,
-          teamId,
-        );
+          totalRounds,
+        } = get();
+        const currentTeam = teamsInGame[currentTeamIndex];
+
+        // Update total score for this team
+        set({
+          matchScores: {
+            ...matchScores,
+            [currentTeam.id]: matchScores[currentTeam.id] + turnScore,
+          },
+        });
+      },
+
+      endMatch: () => {
+        set({ isPlaying: false, teamsInGame: [] });
+      },
+
+      recordCardResult: (cardId, word, result) => {
+        const { turnHistory, turnScore, turnPasses } = get();
 
         set({
-          roundId,
-          cardsInRound: cards,
-          currentCardIndex: 0,
-          roundScore: 0,
-          passesUsed: 0,
-          timeRemaining: get().timerDuration,
-          isPaused: false,
+          turnHistory: [...turnHistory, { cardId, word, result }],
+          turnScore: result === "guessed" ? turnScore + 1 : turnScore,
+          turnPasses: result === "passed" ? turnPasses + 1 : turnPasses,
         });
       },
 
-      // End the current round
-      endRound: async () => {
-        const { roundId, roundScore } = get();
-        if (roundId) {
-          await dbHelpers.endRound(roundId, roundScore);
-        }
-
-        set((state) => ({
-          roundId: null,
-          currentRound: state.currentRound + 1,
-          currentCardIndex: 0,
-          isPaused: false,
-        }));
-      },
-
-      // Record result for a card
-      recordCardResult: async (
-        cardId: number,
-        result: CardResult,
-        timeSpent: number,
-      ) => {
-        const { roundId } = get();
-        if (!roundId) return;
-
-        await dbHelpers.recordCardResult(roundId, cardId, result, timeSpent);
-
-        if (result === "guessed") {
-          set((state) => ({ roundScore: state.roundScore + 1 }));
-        } else if (result === "passed") {
-          set((state) => ({ passesUsed: state.passesUsed + 1 }));
-        }
-      },
-
-      // Move to next card
       nextCard: () => {
-        set((state) => ({
-          currentCardIndex: state.currentCardIndex + 1,
-        }));
-      },
-
-      // Timer controls
-      setTimerDuration: (duration: number) => {
-        set({ timerDuration: duration, timeRemaining: duration });
-      },
-
-      setTimeRemaining: (time: number) => {
-        set({ timeRemaining: time });
+        set((state) => ({ currentCardIndex: state.currentCardIndex + 1 }));
       },
 
       decrementTime: () => {
@@ -197,35 +149,12 @@ export const useGameStore = create<GameState>()(
         }));
       },
 
-      // Game controls
-      setPaused: (paused: boolean) => {
-        set({ isPaused: paused });
-      },
-
-      // Settings toggles
-      toggleTilt: () => {
-        set((state) => ({ tiltEnabled: !state.tiltEnabled }));
-      },
-
-      toggleHaptics: () => {
-        set((state) => ({ hapticsEnabled: !state.hapticsEnabled }));
-      },
-
-      toggleSound: () => {
-        set((state) => ({ soundEnabled: !state.soundEnabled }));
-      },
+      setPaused: (paused) => set({ isPaused: paused }),
     }),
     {
       name: "game-storage",
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({
-        // Only persist settings, not active game state
-        timerDuration: state.timerDuration,
-        passLimit: state.passLimit,
-        tiltEnabled: state.tiltEnabled,
-        hapticsEnabled: state.hapticsEnabled,
-        soundEnabled: state.soundEnabled,
-      }),
+      partialize: (state) => ({ tiltEnabled: state.tiltEnabled }),
     },
   ),
 );

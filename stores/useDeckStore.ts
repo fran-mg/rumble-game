@@ -40,34 +40,35 @@ export const useDeckStore = create<DeckState>((set, get) => ({
   currentCards: [],
 
   loadDecks: async () => {
-    const decks = await dbHelpers.getAllDecks();
-    const selectedDecks = await dbHelpers.getSelectedDecks();
+    const decks = (await dbHelpers.getAllDecks()) as Deck[];
+    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
     set({
-      decks,
-      selectedDeckIds: selectedDecks.map((d: any) => d.id),
+      decks: decks,
+      selectedDeckIds: selectedDecks.map((d) => d.id),
     });
   },
 
   selectDeck: async (deckId: number) => {
     await dbHelpers.toggleDeckSelection(deckId);
-    const selectedDecks = await dbHelpers.getSelectedDecks();
-    set({ selectedDeckIds: selectedDecks.map((d: any) => d.id) });
+    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
+    set({ selectedDeckIds: selectedDecks.map((d) => d.id) });
   },
 
   deselectDeck: async (deckId: number) => {
     await dbHelpers.toggleDeckSelection(deckId);
-    const selectedDecks = await dbHelpers.getSelectedDecks();
-    set({ selectedDeckIds: selectedDecks.map((d: any) => d.id) });
+    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
+    set({ selectedDeckIds: selectedDecks.map((d) => d.id) });
   },
 
   toggleDeckSelection: async (deckId: number) => {
     await dbHelpers.toggleDeckSelection(deckId);
-    const selectedDecks = await dbHelpers.getSelectedDecks();
-    set({ selectedDeckIds: selectedDecks.map((d: any) => d.id) });
+    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
+    set({ selectedDeckIds: selectedDecks.map((d) => d.id) });
   },
 
   loadCardsForSelectedDecks: async () => {
-    const cards = await dbHelpers.getShuffledCardsFromSelectedDecks();
+    const cards =
+      (await dbHelpers.getShuffledCardsFromSelectedDecks()) as Card[];
     set({ currentCards: cards });
   },
 

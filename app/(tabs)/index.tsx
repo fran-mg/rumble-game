@@ -2,7 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { useDeckStore } from "../../stores/useDeckStore";
-import { useGameStore } from "../../stores/useGameStore";
+import { useGameStore } from "../../stores/useGameStore2";
 import { useTeamStore } from "../../stores/useTeamStore";
 
 export default function TabOneScreen() {
