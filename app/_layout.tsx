@@ -33,9 +33,12 @@ export default function RootLayout() {
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="game/play" options={{ gestureEnabled: false }} />
           <Stack.Screen
-            name="game/round-summary"
+            name="game/play/index"
+            options={{ gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="game/round-summary/index"
             options={{ gestureEnabled: false, animation: "fade" }}
           />
           <Stack.Screen
