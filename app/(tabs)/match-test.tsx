@@ -7,7 +7,6 @@ import { MatchPlayer, useGameStore } from "../../stores/useGameStore";
 
 export default function MatchTestScreen() {
   const router = useRouter();
-  const { setupMatch } = useGameStore();
 
   const handleLaunchStressTest = () => {
     // 1. Generate 20 Mock Competitor Names
@@ -40,7 +39,7 @@ export default function MatchTestScreen() {
       return {
         id: numericId,
         name: name,
-        teamId: numericId, // Required number: using ID as fallback since playStyle is "single"
+        teamId: numericId,
       };
     });
 
@@ -58,17 +57,20 @@ export default function MatchTestScreen() {
       });
     }
 
-    // 3. Inject simulated state configuration straight into the store memory
-    setupMatch({
+    // 3. Inject simulated state directly into Zustand using setState
+    // (setupMatch forces roundScores to {} so we must bypass it)
+    useGameStore.setState({
       mode: "taboo",
       scoringStyle: "rounds",
       playStyle: "single",
-      targetLimit: 10, // Match target value
+      targetLimit: 10,
       timerDuration: 60,
       matchTeams: [],
       matchPlayers: mockPlayers,
       roundScores: mockRoundScores,
       cardsInRound: [],
+      currentRound: 10,
+      isPlaying: false, // Set false since we are simulating the end of a match
     });
 
     // 4. Route instantly to your summary interface

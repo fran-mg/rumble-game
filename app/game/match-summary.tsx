@@ -33,7 +33,7 @@ export default function MatchSummaryScreen() {
     .sort((a, b) => a - b);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950 p-6">
+    <SafeAreaView className="flex-1 bg-slate-950 p-3">
       <View className="items-center mt-4 mb-8">
         <LucideIcons.Trophy color="#F59E0B" size={56} className="mb-2" />
         <Text className="text-slate-400 font-bold uppercase tracking-widest mb-1 text-xs">
@@ -46,10 +46,10 @@ export default function MatchSummaryScreen() {
 
       <View className="bg-slate-900 rounded-3xl border border-slate-800 flex-1 overflow-hidden">
         {/* Main Vertical Scroll */}
-        <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 p-3" showsVerticalScrollIndicator={false}>
           <View className="flex-row">
             {/* Left Static Column (Competitor) */}
-            <View className="w-[120px] border-r border-slate-800 pr-3">
+            <View className="w-[140px] border-r border-slate-800 pr-3">
               <View className="h-10 border-b border-slate-800 mb-2 justify-end pb-2">
                 <Text className="text-slate-400 font-bold uppercase text-[10px]">
                   Competitor
@@ -61,12 +61,12 @@ export default function MatchSummaryScreen() {
                   className="h-14 flex-row items-center border-b border-slate-800/50"
                 >
                   <Text
-                    className={`font-black text-xs w-5 ${index === 0 ? "text-amber-500" : "text-slate-600"}`}
+                    className={`font-black text-sm w-5 ${index === 0 ? "text-amber-500" : "text-slate-600"}`}
                   >
                     #{index + 1}
                   </Text>
                   <Text
-                    className="text-white font-bold text-sm ml-1 flex-1"
+                    className="text-white font-bold text-base ml-1 flex-1"
                     numberOfLines={1}
                   >
                     {entity.name}
@@ -87,7 +87,7 @@ export default function MatchSummaryScreen() {
                   {roundKeys.map((r) => (
                     <Text
                       key={r}
-                      className="w-14 text-center text-slate-500 font-bold uppercase text-[10px]"
+                      className="w-10 text-center text-slate-500 font-bold uppercase text-[10px]"
                     >
                       R{r}
                     </Text>
@@ -101,7 +101,7 @@ export default function MatchSummaryScreen() {
                     {roundKeys.map((r) => (
                       <Text
                         key={r}
-                        className="w-14 text-center text-slate-400 font-medium text-sm"
+                        className="w-10 text-center text-slate-400 font-medium text-sm"
                       >
                         {roundScores[r]?.[entity.id] ?? "-"}
                       </Text>
@@ -112,7 +112,7 @@ export default function MatchSummaryScreen() {
             </ScrollView>
 
             {/* Right Static Column (Total) */}
-            <View className="w-16 border-l border-slate-800 pl-3">
+            <View className="w-12 border-l border-slate-800 pl-0">
               <View className="h-10 border-b border-slate-800 mb-2 justify-end pb-2">
                 <Text className="text-slate-400 font-bold uppercase text-[10px] text-right">
                   Total
@@ -124,7 +124,7 @@ export default function MatchSummaryScreen() {
                   className="h-14 justify-center border-b border-slate-800/50"
                 >
                   <Text
-                    className={`text-right font-black text-xl ${index === 0 ? "text-amber-500" : "text-white"}`}
+                    className={`text-center font-black text-xl ${index === 0 ? "text-amber-500" : "text-white"}`}
                   >
                     {totals[entity.id]}
                   </Text>

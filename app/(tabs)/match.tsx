@@ -9,7 +9,7 @@ export default function MatchSetupScreen() {
   const router = useRouter();
   const theme = useAppTheme();
 
-  // Routes straight to settings passing the mode parameter string
+  //  Wire-Up Handler: Routes straight to settings passing the mode parameter string
   const handleModeSelection = (mode: "headsup" | "taboo" | "password") => {
     router.push({
       pathname: "/game/settings",
