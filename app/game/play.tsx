@@ -1,7 +1,16 @@
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import React, { useEffect, useState } from "react";
 import { Dimensions, Text, TouchableOpacity, View } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTiltControl } from "../../hooks/useTiltControl";
 import { useGameStore } from "../../stores/useGameStore";
@@ -10,21 +19,22 @@ type CardFlashState = "default" | "pass" | "done";
 
 export default function PlayScreen() {
   const router = useRouter();
-  const { width } = Dimensions.get("window");
+  const { width, height } = Dimensions.get("window");
+
   const {
     mode,
-    teamsInGame,
-    currentTeamIndex,
+    playStyle,
+    matchTeams,
+    matchPlayers,
+    currentTurnIndex,
     cardsInRound,
     currentCardIndex,
-    timeRemaining,
     timerDuration,
     isPaused,
     startTurn,
     endTurn,
-    decrementTime,
-    nextCard,
     recordCardResult,
+    nextCard,
   } = useGameStore();
 
   const [gameState, setGameState] = useState<
@@ -33,10 +43,30 @@ export default function PlayScreen() {
   const [countdown, setCountdown] = useState(3);
   const [flashState, setFlashState] = useState<CardFlashState>("default");
 
-  const currentTeam = teamsInGame[currentTeamIndex];
-  const currentCard = cardsInRound[currentCardIndex];
+  // Continuous Timer
+  const [displayTime, setDisplayTime] = useState(timerDuration);
+  const progress = useSharedValue(1);
 
-  // 1. Initial 3-2-1 Countdown
+  const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
+  const currentEntity = activeRoster[currentTurnIndex];
+  const currentCard = cardsInRound[currentCardIndex];
+  const isLandscape = mode === "headsup";
+
+  // 1. Orientation Lock
+  useEffect(() => {
+    if (isLandscape) {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    } else {
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
+    }
+    return () => {
+      ScreenOrientation.unlockAsync();
+    };
+  }, [isLandscape]);
+
+  // 2. Initial 3-2-1 Countdown
   useEffect(() => {
     startTurn();
     const countInterval = setInterval(() => {
@@ -44,6 +74,7 @@ export default function PlayScreen() {
         if (prev <= 1) {
           clearInterval(countInterval);
           setGameState("playing");
+          startContinuousTimer();
           return 0;
         }
         return prev - 1;
@@ -52,57 +83,73 @@ export default function PlayScreen() {
     return () => clearInterval(countInterval);
   }, []);
 
-  // 2. Main Game Timer
-  useEffect(() => {
-    if (gameState !== "playing" || isPaused) return;
+  // 3. Smooth Continuous Timer Engine
+  const triggerTimeUp = () => {
+    setGameState("timeup");
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    setTimeout(() => {
+      endTurn();
+      if (isLandscape) ScreenOrientation.unlockAsync(); // unlock before routing
+      router.replace("/game/round-summary" as any); // Explicitly typecast your path parameter string to clear type cache checks
+    }, 1500);
+  };
 
-    if (timeRemaining <= 0) {
-      setGameState("timeup");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      setTimeout(() => {
-        endTurn();
-        router.replace("/game/round-summary");
-      }, 1500); // Wait 1.5s then go to summary
-      return;
-    }
+  const startContinuousTimer = () => {
+    progress.value = withTiming(
+      0,
+      { duration: timerDuration * 1000, easing: Easing.linear },
+      (finished) => {
+        if (finished) runOnJS(triggerTimeUp)();
+      },
+    );
 
-    const interval = setInterval(decrementTime, 1000);
-    return () => clearInterval(interval);
-  }, [gameState, isPaused, timeRemaining]);
+    // Fallback digit updater
+    const interval = setInterval(() => {
+      setDisplayTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
+  const animatedProgressStyle = useAnimatedStyle(() => ({
+    width: progress.value * (isLandscape ? height : width), // Use height if rotated
+  }));
+
+  // 4. Action Handler (Brief Flashes)
   const handleAction = (action: "guessed" | "passed") => {
     if (gameState !== "playing" || flashState !== "default" || !currentCard)
       return;
 
-    // Flash UI and Haptics
     setFlashState(action === "guessed" ? "done" : "pass");
     Haptics.impactAsync(
       action === "guessed"
         ? Haptics.ImpactFeedbackStyle.Heavy
         : Haptics.ImpactFeedbackStyle.Medium,
     );
-
     recordCardResult(currentCard.id, currentCard.word, action);
 
-    // Wait for flash animation, then show next card
+    // BRIEF timeout (200ms)
     setTimeout(() => {
       setFlashState("default");
       if (currentCardIndex + 1 >= cardsInRound.length) {
-        // Out of cards? End round early.
-        setGameState("timeup");
-        endTurn();
-        router.replace("/game/round-summary");
+        cancelAnimation(progress);
+        triggerTimeUp();
       } else {
         nextCard();
       }
-    }, 600);
+    }, 200);
   };
 
-  // 3. Tilt Controls (Only active for Heads Up)
+  // 5. Tilt Controls (Heads Up Only - Sideways logic)
+  // When phone is on forehead in landscape, tilting UP (face to ceiling) = pass. DOWN (face to floor) = correct.
   useTiltControl(
-    gameState === "playing" && flashState === "default" && mode === "headsup",
-    () => handleAction("passed"), // Tilt UP
-    () => handleAction("guessed"), // Tilt DOWN
+    gameState === "playing" && flashState === "default" && isLandscape,
+    () => handleAction("passed"),
+    () => handleAction("guessed"),
   );
 
   // -- RENDERERS --
@@ -111,7 +158,7 @@ export default function PlayScreen() {
     return (
       <View className="flex-1 bg-slate-900 items-center justify-center">
         <Text className="text-white text-3xl font-bold mb-4">
-          {currentTeam?.name}'s Turn
+          {currentEntity?.name}'s Turn
         </Text>
         <Text className="text-white text-9xl font-black">{countdown}</Text>
         <Text className="text-slate-400 mt-8 text-lg font-medium">
@@ -129,8 +176,6 @@ export default function PlayScreen() {
     );
   }
 
-  // Card Styles Based on Flash State
-  const isLandscape = mode === "headsup";
   const getCardColors = () => {
     if (flashState === "pass")
       return {
@@ -145,81 +190,72 @@ export default function PlayScreen() {
         text: "text-white",
       };
     return {
-      bg: "bg-slate-700",
+      bg: "bg-slate-600",
       border: "border-slate-800",
       text: "text-white",
     };
   };
   const colors = getCardColors();
 
-  // Progress Bar Width
-  const progressWidth = (timeRemaining / timerDuration) * width;
-
   return (
-    <SafeAreaView
-      className={`flex-1 bg-slate-950 ${isLandscape ? "justify-center" : ""}`}
-    >
-      {/* Top Progress Bar */}
-      <View
-        className="absolute top-0 left-0 h-2 bg-blue-500"
-        style={{ width: progressWidth }}
+    <SafeAreaView className="flex-1 bg-slate-950 relative">
+      {/* Continuous Timer Line */}
+      <Animated.View
+        className="absolute top-0 left-0 h-3 bg-blue-500 z-50"
+        style={animatedProgressStyle}
       />
 
-      {/* The Playing Card */}
-      <View className={`flex-1 p-4 ${isLandscape ? "px-12 py-8" : ""}`}>
+      {/* Spaced Card Container */}
+      <View className="flex-1 p-6 pb-8">
         <View
-          className={`flex-1 rounded-3xl ${colors.bg} ${colors.border} border-4 p-2 shadow-2xl justify-center`}
+          className={`flex-1 rounded-[40px] ${colors.bg} ${colors.border} border-4 p-2 shadow-2xl justify-center`}
         >
-          {/* Inner Stitched Border */}
+          {/* Inner Dashed Stitching */}
           <View
-            className={`flex-1 rounded-2xl border-4 ${colors.border} border-dashed items-center justify-center p-6 relative`}
+            className={`flex-1 rounded-[32px] border-4 ${colors.border} border-dashed items-center justify-center p-6 relative`}
           >
-            {/* Timer Overlay */}
-            <View className="absolute top-4 right-6 bg-black/30 px-3 py-1 rounded-full">
-              <Text className="text-white font-black text-xl">
-                {timeRemaining}
+            {/* Small Top Right Countdown Digit */}
+            <View className="absolute top-4 right-6">
+              <Text className="text-white/80 font-black text-2xl">
+                {displayTime}
               </Text>
             </View>
 
-            {/* Main Word or Flash State */}
+            {/* Word Content */}
             {flashState === "pass" ? (
               <Text className="text-white text-7xl font-black tracking-widest uppercase">
                 PASS
               </Text>
             ) : flashState === "done" ? (
               <Text className="text-white text-7xl font-black tracking-widest uppercase">
-                DONE!
+                CORRECT!
               </Text>
             ) : (
               <>
                 <Text
-                  className={`font-black text-center ${isLandscape ? "text-8xl" : "text-5xl"} text-white`}
+                  className={`font-black text-center ${isLandscape ? "text-8xl" : "text-5xl"} text-white border-b-4 border-white pb-3`}
                   adjustsFontSizeToFit
                   numberOfLines={2}
                 >
                   {currentCard?.word}
                 </Text>
 
-                {/* Password Mode: Forbidden Words */}
+                {/* Password Mode: Stacked Forbidden Words */}
                 {mode === "password" && currentCard?.taboo_words && (
-                  <View className="mt-12 w-full px-4">
-                    <Text className="text-red-300 font-bold text-center mb-4 uppercase tracking-widest text-sm">
-                      Forbidden Clues
+                  <View className="mt-6 items-center">
+                    <Text className="text-red-300 font-bold mb-3 uppercase tracking-widest text-bases ">
+                      ( Forbidden )
                     </Text>
-                    <View className="flex-row flex-wrap justify-center gap-3">
-                      {JSON.parse(currentCard.taboo_words).map(
-                        (w: string, i: number) => (
-                          <View
-                            key={i}
-                            className="bg-slate-900/50 px-4 py-2 rounded-xl border border-red-500/30"
-                          >
-                            <Text className="text-red-200 font-bold text-xl">
-                              {w}
-                            </Text>
-                          </View>
-                        ),
-                      )}
-                    </View>
+                    {JSON.parse(currentCard.taboo_words).map(
+                      (w: string, i: number) => (
+                        <Text
+                          key={i}
+                          className="text-red-400 font-bold text-4xl mb-3"
+                        >
+                          {w}
+                        </Text>
+                      ),
+                    )}
                   </View>
                 )}
               </>
@@ -227,7 +263,7 @@ export default function PlayScreen() {
           </View>
         </View>
 
-        {/* Manual Buttons for Taboo/Password Modes */}
+        {/* Manual Buttons for Non-Landscape */}
         {!isLandscape && flashState === "default" && (
           <View className="flex-row justify-between gap-4 mt-6 h-20">
             <TouchableOpacity
@@ -235,7 +271,7 @@ export default function PlayScreen() {
               onPress={() => handleAction("passed")}
             >
               <Text className="text-white text-2xl font-black tracking-wide">
-                nope.
+                pass..
               </Text>
             </TouchableOpacity>
 

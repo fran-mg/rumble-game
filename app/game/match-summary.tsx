@@ -7,68 +7,118 @@ import { useGameStore } from "../../stores/useGameStore";
 
 export default function MatchSummaryScreen() {
   const router = useRouter();
-  const { teamsInGame, matchScores, endMatch } = useGameStore();
+  const {
+    playStyle,
+    matchTeams,
+    matchPlayers,
+    roundScores,
+    currentRound,
+    endMatch,
+  } = useGameStore();
 
-  // Calculate Winner
-  const sortedTeams = [...teamsInGame].sort(
-    (a, b) => matchScores[b.id] - matchScores[a.id],
+  const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
+
+  // Calculate Totals per Entity
+  const totals: Record<string, number> = {};
+  activeRoster.forEach((entity) => {
+    totals[entity.id] = Object.values(roundScores).reduce(
+      (acc, round) => acc + (round[entity.id] || 0),
+      0,
+    );
+  });
+
+  const sortedEntities = [...activeRoster].sort(
+    (a, b) => totals[b.id] - totals[a.id],
   );
-  const winner = sortedTeams[0];
+  const winner = sortedEntities[0];
   const isTie =
-    sortedTeams.length > 1 &&
-    matchScores[sortedTeams[0].id] === matchScores[sortedTeams[1].id];
+    sortedEntities.length > 1 &&
+    totals[sortedEntities[0].id] === totals[sortedEntities[1].id];
 
   const handleFinish = () => {
     endMatch();
     router.replace("/");
   };
 
+  // Build columns based on rounds played
+  const roundKeys = Object.keys(roundScores)
+    .map(Number)
+    .sort((a, b) => a - b);
+
   return (
     <SafeAreaView className="flex-1 bg-slate-950 p-6">
-      <View className="items-center mt-8 mb-12">
-        <LucideIcons.Trophy color="#F59E0B" size={64} className="mb-4" />
-        <Text className="text-slate-400 font-bold uppercase tracking-widest mb-2">
+      <View className="items-center mt-4 mb-8">
+        <LucideIcons.Trophy color="#F59E0B" size={56} className="mb-2" />
+        <Text className="text-slate-400 font-bold uppercase tracking-widest mb-1 text-xs">
           Match Complete
         </Text>
         {isTie ? (
-          <Text className="text-white text-5xl font-black text-center">
+          <Text className="text-white text-4xl font-black text-center">
             It's a Tie!
           </Text>
         ) : (
-          <Text className="text-amber-500 text-5xl font-black text-center">
+          <Text className="text-amber-500 text-4xl font-black text-center">
             {winner?.name} Wins!
           </Text>
         )}
       </View>
 
-      {/* Leaderboard */}
-      <View className="bg-slate-900 rounded-3xl p-6 border border-slate-800 flex-1">
-        <View className="flex-row border-b border-slate-800 pb-4 mb-4">
-          <Text className="flex-1 text-slate-400 font-bold uppercase text-xs">
-            Team
+      {/* Grid Leaderboard */}
+      <View className="bg-slate-900 rounded-3xl p-5 border border-slate-800 flex-1">
+        {/* Header Row */}
+        <View className="flex-row border-b border-slate-800 pb-3 mb-3">
+          <Text className="flex-1 text-slate-400 font-bold uppercase text-[10px]">
+            Competitor
           </Text>
-          <Text className="text-slate-400 font-bold uppercase text-xs">
-            Final Score
+          {roundKeys.map((r) => (
+            <Text
+              key={r}
+              className="w-10 text-center text-slate-500 font-bold uppercase text-[10px]"
+            >
+              R{r}
+            </Text>
+          ))}
+          <Text className="w-14 text-right text-slate-400 font-bold uppercase text-[10px]">
+            Total
           </Text>
         </View>
 
+        {/* Rows */}
         <ScrollView showsVerticalScrollIndicator={false}>
-          {sortedTeams.map((team, index) => (
-            <View key={team.id} className="flex-row items-center mb-6">
-              <View className="w-8">
+          {sortedEntities.map((entity, index) => (
+            <View
+              key={entity.id}
+              className="flex-row items-center py-3 border-b border-slate-800/50"
+            >
+              <View className="flex-1 flex-row items-center">
                 <Text
-                  className={`font-black text-xl ${index === 0 ? "text-amber-500" : "text-slate-600"}`}
+                  className={`font-black text-sm w-5 ${index === 0 ? "text-amber-500" : "text-slate-600"}`}
                 >
                   #{index + 1}
                 </Text>
+                <Text
+                  className="text-white font-bold text-sm ml-1"
+                  numberOfLines={1}
+                >
+                  {entity.name}
+                </Text>
               </View>
-              <Text className="flex-1 text-white font-bold text-xl ml-2">
-                {team.name}
-              </Text>
+
+              {/* Round Breakdowns */}
+              {roundKeys.map((r) => (
+                <Text
+                  key={r}
+                  className="w-10 text-center text-slate-400 font-medium text-xs"
+                >
+                  {roundScores[r]?.[entity.id] ?? "-"}
+                </Text>
+              ))}
+
+              {/* Total */}
               <Text
-                className={`font-black text-3xl ${index === 0 ? "text-amber-500" : "text-white"}`}
+                className={`w-14 text-right font-black text-xl ${index === 0 ? "text-amber-500" : "text-white"}`}
               >
-                {matchScores[team.id]}
+                {totals[entity.id]}
               </Text>
             </View>
           ))}
