@@ -1,22 +1,23 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import DraggableFlatList, {
-    RenderItemParams,
+  RenderItemParams,
 } from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../../stores/useDeckStore";
 import {
-    PlayStyle,
-    ScoringStyle,
-    useGameStore,
+  PlayStyle,
+  ScoringStyle,
+  useGameStore,
 } from "../../../stores/useGameStore";
 import DeckSelector from "./_DeckSelector";
 import MatchSetupHeader from "./_MatchSetupHeader";
@@ -150,17 +151,54 @@ export default function SettingsScreen() {
     setEditingId(null);
   };
 
-  const handleDragEnd = ({ data }: { data: ListItem[] }) => {
-    let currentTeamId = data.find((i) => i.type === "team")?.id || 1;
-    setRosterData(
-      data.map((item) => {
-        if (item.type === "team") {
-          currentTeamId = item.id;
-          return item;
-        }
-        return { ...item, teamId: currentTeamId };
-      }),
-    );
+  // Improved drag and drop logic dynamically supporting moving grouped teams
+  const handleDragEnd = ({
+    data,
+    from,
+  }: {
+    data: ListItem[];
+    from: number;
+  }) => {
+    const activeListItems =
+      playStyle === "single"
+        ? rosterData.filter((i) => i.type === "player")
+        : rosterData;
+    const movedItem = activeListItems[from];
+
+    if (playStyle === "single") {
+      const teams = rosterData.filter((i) => i.type === "team");
+      setRosterData([...teams, ...data]);
+    } else {
+      if (movedItem?.type === "team") {
+        // Group players back under their new team position
+        const newTeamOrder = data.filter((i) => i.type === "team");
+        let rebuilt: ListItem[] = [];
+
+        newTeamOrder.forEach((t) => {
+          rebuilt.push(t);
+          const teamPlayers = rosterData.filter(
+            (i) => i.type === "player" && i.teamId === t.id,
+          );
+          rebuilt.push(...teamPlayers);
+        });
+        setRosterData(rebuilt);
+      } else {
+        // Single player was moved, assign to whatever team is visually above them
+        let currentTeamId =
+          data.find((i) => i.type === "team")?.id ||
+          rosterData.find((i) => i.type === "team")?.id ||
+          1;
+
+        const newData = data.map((item) => {
+          if (item.type === "team") {
+            currentTeamId = item.id;
+            return item;
+          }
+          return { ...item, teamId: currentTeamId };
+        });
+        setRosterData(newData);
+      }
+    }
   };
 
   const handleStartGame = async () => {
@@ -178,7 +216,7 @@ export default function SettingsScreen() {
 
     const finalTeams = rosterData.filter((i) => i.type === "team") as any;
     const finalPlayers = rosterData.filter(
-      (i) => i.type === "player" && i.name,
+      (i) => i.type === "player" && i.name.trim().length > 0,
     ) as any;
 
     if (
@@ -209,14 +247,11 @@ export default function SettingsScreen() {
   };
 
   const renderItemWrapper = (params: RenderItemParams<ListItem>) => {
-    // Safely check if the item has a teamId (is a player) before using it
     const itemTeamId =
       params.item.type === "player" ? params.item.teamId : null;
-
     const team = rosterData.find(
       (i) => i.type === "team" && i.id === itemTeamId,
     ) as any;
-
     const teamColor = playStyle === "team" && team ? team.color : "#1E293B";
 
     return (
@@ -234,100 +269,108 @@ export default function SettingsScreen() {
     );
   };
 
+  const activeListItems =
+    playStyle === "single"
+      ? rosterData.filter((i) => i.type === "player")
+      : rosterData;
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <DraggableFlatList
-          data={rosterData}
-          onDragEnd={handleDragEnd}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderItemWrapper}
-          contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <MatchSetupHeader
-              scoringStyle={scoringStyle}
-              handleScoringStyleChange={handleScoringStyleChange}
-              targetLimit={targetLimit}
-              setTargetLimit={setTargetLimit}
-              playStyle={playStyle}
-              setPlayStyle={setPlayStyle}
-            />
-          }
-          ListFooterComponent={
-            <>
-              <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl p-5 pt-0 mb-4">
-                {playStyle === "team" ? (
-                  <View className="flex-row gap-2 mt-4">
-                    <TouchableOpacity
-                      onPress={handleAddTeam}
-                      className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
-                    >
-                      <Text className="text-slate-400 font-bold text-xs">
-                        + Add Team
-                      </Text>
-                    </TouchableOpacity>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView className="flex-1 bg-slate-950">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+        >
+          <DraggableFlatList
+            data={activeListItems}
+            onDragEnd={handleDragEnd}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderItemWrapper}
+            contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            ListHeaderComponent={
+              <MatchSetupHeader
+                scoringStyle={scoringStyle}
+                handleScoringStyleChange={handleScoringStyleChange}
+                targetLimit={targetLimit}
+                setTargetLimit={setTargetLimit}
+                playStyle={playStyle}
+                setPlayStyle={setPlayStyle}
+              />
+            }
+            ListFooterComponent={
+              <>
+                <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl p-5 pt-0 mb-4">
+                  {playStyle === "team" ? (
+                    <View className="flex-row gap-2 mt-4">
+                      <TouchableOpacity
+                        onPress={handleAddTeam}
+                        className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
+                      >
+                        <Text className="text-slate-400 font-bold text-xs">
+                          + Add Team
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleAddPlayer()}
+                        className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
+                      >
+                        <Text className="text-slate-400 font-bold text-xs">
+                          + Add Player
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
                     <TouchableOpacity
                       onPress={() => handleAddPlayer()}
-                      className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
+                      className="border border-dashed border-slate-700 rounded-xl py-3 items-center mt-4"
                     >
-                      <Text className="text-slate-400 font-bold text-xs">
-                        + Add Player
+                      <Text className="text-slate-400 font-bold">
+                        + Add Solo Player
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => handleAddPlayer()}
-                    className="border border-dashed border-slate-700 rounded-xl py-3 items-center mt-4"
-                  >
-                    <Text className="text-slate-400 font-bold">
-                      + Add Solo Player
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                  )}
+                </View>
 
-              <DeckSelector
-                decks={decks}
-                selectedDeckIds={selectedDeckIds}
-                isDecksExpanded={isDecksExpanded}
-                setIsDecksExpanded={setIsDecksExpanded}
-                toggleDeckSelection={toggleDeckSelection}
-              />
+                <DeckSelector
+                  decks={decks}
+                  selectedDeckIds={selectedDeckIds}
+                  isDecksExpanded={isDecksExpanded}
+                  setIsDecksExpanded={setIsDecksExpanded}
+                  toggleDeckSelection={toggleDeckSelection}
+                />
 
-              <TimerSelector
-                timerDuration={timerDuration}
-                setTimerDuration={setTimerDuration}
-              />
-            </>
-          }
-        />
-      </KeyboardAvoidingView>
+                <TimerSelector
+                  timerDuration={timerDuration}
+                  setTimerDuration={setTimerDuration}
+                />
+              </>
+            }
+          />
+        </KeyboardAvoidingView>
 
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/90 border-t border-slate-900">
-        <TouchableOpacity
-          onPress={handleStartGame}
-          className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg"
-        >
-          <Text className="text-white font-black text-xl tracking-wide uppercase">
-            Start Game
-          </Text>
-          <Text className="text-emerald-200 text-xs mt-1 font-medium">
-            {playStyle === "team"
-              ? `${rosterData.filter((i) => i.type === "team").length} Teams`
-              : `${rosterData.filter((i) => i.type === "player").length} Players`}{" "}
-            •{" "}
-            {scoringStyle === "rounds"
-              ? `${targetLimit} Rounds`
-              : `${targetLimit} Tiles`}{" "}
-            • {timerDuration}s
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/90 border-t border-slate-900">
+          <TouchableOpacity
+            onPress={handleStartGame}
+            className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg"
+          >
+            <Text className="text-white font-black text-xl tracking-wide uppercase">
+              Start Game
+            </Text>
+            <Text className="text-emerald-200 text-xs mt-1 font-medium">
+              {playStyle === "team"
+                ? `${rosterData.filter((i) => i.type === "team").length} Teams`
+                : `${rosterData.filter((i) => i.type === "player" && i.name.trim().length > 0).length} Players`}{" "}
+              •{" "}
+              {scoringStyle === "rounds"
+                ? `${targetLimit} Rounds`
+                : `${targetLimit} Tiles`}{" "}
+              • {timerDuration}s
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }

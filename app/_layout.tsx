@@ -7,7 +7,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
@@ -28,26 +27,24 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="game/play/index"
-            options={{ gestureEnabled: false }}
-          />
-          <Stack.Screen
-            name="game/round-summary/index"
-            options={{ gestureEnabled: false, animation: "fade" }}
-          />
-          <Stack.Screen
-            name="game/match-summary"
-            options={{ gestureEnabled: false }}
-          />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="game/play/index"
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="game/round-summary/index"
+          options={{ gestureEnabled: false, animation: "fade" }}
+        />
+        <Stack.Screen
+          name="game/match-summary"
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
+    </ThemeProvider>
   );
 }

@@ -32,8 +32,6 @@ export default function RosterItem({
   handleSaveEdit,
   handleDeleteEntity,
 }: RosterItemProps) {
-  if (playStyle === "single" && item.type === "team") return null;
-
   if (item.type === "team") {
     return (
       <ScaleDecorator>
@@ -45,7 +43,12 @@ export default function RosterItem({
           className={`border-x-2 border-t-2 rounded-t-2xl p-3 shadow-lg mt-3 ${isActive ? "border-b-2 rounded-b-2xl border-blue-500 z-50" : ""}`}
         >
           <View className="flex-row justify-between items-center">
-            <TouchableOpacity onLongPress={drag} className="p-2 -ml-2">
+            {/* Standard TouchableOpacity safely fires the drag intent */}
+            <TouchableOpacity
+              onLongPress={drag}
+              delayLongPress={150}
+              className="p-2 -ml-2 active:opacity-50"
+            >
               <LucideIcons.GripVertical color="#64748B" size={20} />
             </TouchableOpacity>
 
@@ -108,7 +111,11 @@ export default function RosterItem({
         style={{ borderColor: teamColor }}
         className={`flex-row items-center bg-slate-950/80 p-3 border-x-2 border-b-2 ${playStyle === "single" ? "rounded-xl border-t-2 mb-2 border-slate-800" : ""} ${isActive ? "opacity-80 scale-105 shadow-xl border-blue-500 rounded-xl border-t-2 z-50" : ""}`}
       >
-        <TouchableOpacity onLongPress={drag} className="p-2 -ml-2">
+        <TouchableOpacity
+          onLongPress={drag}
+          delayLongPress={150}
+          className="p-2 -ml-2 active:opacity-50"
+        >
           <LucideIcons.GripVertical color="#64748B" size={18} />
         </TouchableOpacity>
 
