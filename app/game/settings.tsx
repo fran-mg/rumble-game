@@ -55,7 +55,6 @@ export default function SettingsScreen() {
   const [timerDuration, setTimerDuration] = useState(60);
   const [isDecksExpanded, setIsDecksExpanded] = useState(false);
 
-  // Unified Roster Array for seamless Drag and Drop
   const [rosterData, setRosterData] = useState<ListItem[]>([
     { type: "team", id: 1, name: "Team 1", color: "#3B82F6" },
     { type: "player", id: 11, name: "Player 1", teamId: 1 },
@@ -70,12 +69,17 @@ export default function SettingsScreen() {
     loadDecks();
   }, []);
 
-  // --- Handlers ---
   const handleScoringStyleChange = (style: ScoringStyle) => {
     setScoringStyle(style);
-    if (style === "rounds" && targetLimit !== "Infinity" && targetLimit > 20)
-      setTargetLimit(20);
-    if (style === "boardgame" && targetLimit === "Infinity") setTargetLimit(30);
+    if (style === "rounds") {
+      if (targetLimit !== "Infinity" && targetLimit > 20) setTargetLimit(20);
+      if (targetLimit !== "Infinity" && targetLimit < 1) setTargetLimit(1);
+    }
+    if (style === "boardgame") {
+      if (targetLimit === "Infinity") setTargetLimit(30);
+      if (targetLimit !== "Infinity" && targetLimit > 30) setTargetLimit(30);
+      if (targetLimit !== "Infinity" && targetLimit < 5) setTargetLimit(5);
+    }
   };
 
   const getUnusedColor = () => {
@@ -99,13 +103,11 @@ export default function SettingsScreen() {
   };
 
   const handleAddPlayer = (teamId?: number) => {
-    // If solo, assign to first team implicitly for structure
     const fallbackTeamId =
       rosterData.find((i) => i.type === "team")?.id || generateNumId();
     const newId = generateNumId();
-
-    // Insert player directly under their team
     const newData = [...rosterData];
+
     const insertionIndex = teamId
       ? newData.findLastIndex((i) => i.type === "player" && i.teamId === teamId)
       : newData.length - 1;
@@ -152,7 +154,6 @@ export default function SettingsScreen() {
     setEditingId(null);
   };
 
-  // Re-calculate players' team IDs after dragging them between lists!
   const handleDragEnd = ({ data }: { data: ListItem[] }) => {
     let currentTeamId = data.find((i) => i.type === "team")?.id || 1;
     const resolvedData = data.map((item) => {
@@ -212,25 +213,25 @@ export default function SettingsScreen() {
     router.replace("/game/play");
   };
 
-  // --- DND Render Item ---
   const renderRosterItem = ({
     item,
     drag,
     isActive,
+    getIndex,
   }: RenderItemParams<ListItem>) => {
-    if (playStyle === "single" && item.type === "team") return null; // Hide teams in Solo
+    if (playStyle === "single" && item.type === "team") return null;
 
     if (item.type === "team") {
       return (
         <ScaleDecorator>
           <View
             style={{
-              borderColor: isActive ? "#3B82F6" : item.color,
+              borderColor: item.color,
               backgroundColor: isActive ? "#0F172A" : "transparent",
             }}
-            className="border-2 rounded-2xl p-3 mb-2 shadow-lg"
+            className={`border-x-2 border-t-2 rounded-t-2xl p-3 shadow-lg mt-3 ${isActive ? "border-b-2 rounded-b-2xl border-blue-500 z-50" : ""}`}
           >
-            <View className="flex-row justify-between items-center pb-2">
+            <View className="flex-row justify-between items-center">
               <TouchableOpacity onLongPress={drag} className="p-2 -ml-2">
                 <LucideIcons.GripVertical color="#64748B" size={20} />
               </TouchableOpacity>
@@ -283,25 +284,21 @@ export default function SettingsScreen() {
                 )}
               </View>
             </View>
-            <TouchableOpacity
-              onPress={() => handleAddPlayer(item.id)}
-              className="flex-row items-center ml-8 py-2"
-            >
-              <LucideIcons.Plus color="#3B82F6" size={14} />
-              <Text className="text-blue-500 font-bold text-xs ml-1">
-                Add Player
-              </Text>
-            </TouchableOpacity>
           </View>
         </ScaleDecorator>
       );
     }
 
-    // Player Item
+    const team = rosterData.find(
+      (i) => i.type === "team" && i.id === item.teamId,
+    ) as any;
+    const teamColor = playStyle === "team" && team ? team.color : "#1E293B";
+
     return (
       <ScaleDecorator>
         <View
-          className={`flex-row items-center bg-slate-950 p-3 rounded-xl mb-2 ${playStyle === "team" ? "ml-6 mr-2 border border-slate-800" : ""} ${isActive ? "opacity-80 scale-105 shadow-xl border-blue-500" : ""}`}
+          style={{ borderColor: teamColor }}
+          className={`flex-row items-center bg-slate-950/80 p-3 border-x-2 border-b-2 ${playStyle === "single" ? "rounded-xl border-t-2 mb-2 border-slate-800" : ""} ${isActive ? "opacity-80 scale-105 shadow-xl border-blue-500 rounded-xl border-t-2 z-50" : ""}`}
         >
           <TouchableOpacity onLongPress={drag} className="p-2 -ml-2">
             <LucideIcons.GripVertical color="#64748B" size={18} />
@@ -365,13 +362,12 @@ export default function SettingsScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        {/* We use DraggableFlatList as the primary scroller to avoid nested scroll issues */}
         <DraggableFlatList
           data={rosterData}
           onDragEnd={handleDragEnd}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderRosterItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>
@@ -379,7 +375,6 @@ export default function SettingsScreen() {
                 Match Setup
               </Text>
 
-              {/* 1. SCORING STYLE CARD */}
               <View className="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-4">
                 <Text className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-3">
                   Scoring Style
@@ -458,7 +453,6 @@ export default function SettingsScreen() {
                 )}
               </View>
 
-              {/* 2. PLAYERS AND TEAMS HEADER */}
               <View className="bg-slate-900 border border-slate-800 rounded-t-3xl p-5 pb-2">
                 <View className="flex-row justify-between items-center">
                   <Text className="text-slate-400 font-bold uppercase tracking-widest text-xs">
@@ -488,21 +482,30 @@ export default function SettingsScreen() {
           }
           ListFooterComponent={
             <>
-              {/* Add Buttons inside Card Bottom */}
-              <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl p-5 mb-4">
+              <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl p-5 pt-0 mb-4">
                 {playStyle === "team" ? (
-                  <TouchableOpacity
-                    onPress={handleAddTeam}
-                    className="border border-dashed border-slate-700 rounded-xl py-3 items-center"
-                  >
-                    <Text className="text-slate-400 font-bold">
-                      + Add Team Container
-                    </Text>
-                  </TouchableOpacity>
+                  <View className="flex-row gap-2 mt-4">
+                    <TouchableOpacity
+                      onPress={handleAddTeam}
+                      className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
+                    >
+                      <Text className="text-slate-400 font-bold text-xs">
+                        + Add Team
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleAddPlayer()}
+                      className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
+                    >
+                      <Text className="text-slate-400 font-bold text-xs">
+                        + Add Player
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <TouchableOpacity
                     onPress={() => handleAddPlayer()}
-                    className="border border-dashed border-slate-700 rounded-xl py-3 items-center"
+                    className="border border-dashed border-slate-700 rounded-xl py-3 items-center mt-4"
                   >
                     <Text className="text-slate-400 font-bold">
                       + Add Solo Player
@@ -511,7 +514,6 @@ export default function SettingsScreen() {
                 )}
               </View>
 
-              {/* 3. DECKS CARD */}
               <View className="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-4">
                 <TouchableOpacity
                   onPress={() => setIsDecksExpanded(!isDecksExpanded)}
@@ -568,7 +570,6 @@ export default function SettingsScreen() {
                 )}
               </View>
 
-              {/* 4. TURN TIMER CARD */}
               <View className="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-4">
                 <Text className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-6">
                   Turn Timer
@@ -580,26 +581,31 @@ export default function SettingsScreen() {
                     {timerDuration}s
                   </Text>
                 </View>
-                <Slider
-                  style={{ width: "100%", height: 40 }}
-                  minimumValue={10}
-                  maximumValue={180}
-                  step={5}
-                  value={timerDuration}
-                  onValueChange={setTimerDuration}
-                  minimumTrackTintColor={
-                    timerDuration <= 20 ? "#EF4444" : "#6366F1"
-                  }
-                  maximumTrackTintColor="#1E293B"
-                  thumbTintColor="#FFFFFF"
-                />
+                {/* To prevent FlatList intercepting Slider, wrap in gesture capture */}
+                <View
+                  onStartShouldSetResponder={() => true}
+                  onMoveShouldSetResponder={() => true}
+                >
+                  <Slider
+                    style={{ width: "100%", height: 40 }}
+                    minimumValue={10}
+                    maximumValue={180}
+                    step={5}
+                    value={timerDuration}
+                    onValueChange={setTimerDuration}
+                    minimumTrackTintColor={
+                      timerDuration <= 20 ? "#EF4444" : "#6366F1"
+                    }
+                    maximumTrackTintColor="#1E293B"
+                    thumbTintColor="#FFFFFF"
+                  />
+                </View>
               </View>
             </>
           }
         />
       </KeyboardAvoidingView>
 
-      {/* 5. STICKY FOOTER */}
       <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/90 border-t border-slate-900">
         <TouchableOpacity
           onPress={handleStartGame}

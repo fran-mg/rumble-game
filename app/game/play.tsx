@@ -12,7 +12,10 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTiltControl } from "../../hooks/useTiltControl";
+import {
+  useForeheadDetector,
+  useTiltControl,
+} from "../../hooks/useTiltControl";
 import { useGameStore } from "../../stores/useGameStore";
 
 type CardFlashState = "default" | "pass" | "done";
@@ -20,7 +23,6 @@ type CardFlashState = "default" | "pass" | "done";
 export default function PlayScreen() {
   const router = useRouter();
 
-  // Real-time dimensions for orientation flips in Taboo mode
   const [dims, setDims] = useState(Dimensions.get("window"));
   useEffect(() => {
     const sub = Dimensions.addEventListener("change", ({ window }) =>
@@ -46,7 +48,7 @@ export default function PlayScreen() {
   } = useGameStore();
 
   const [gameState, setGameState] = useState<
-    "countdown" | "playing" | "timeup"
+    "waiting-forehead" | "countdown" | "playing" | "timeup"
   >("countdown");
   const [countdown, setCountdown] = useState(3);
   const [flashState, setFlashState] = useState<CardFlashState>("default");
@@ -57,23 +59,27 @@ export default function PlayScreen() {
   const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
   const currentEntity = activeRoster[currentTurnIndex];
   const currentCard = cardsInRound[currentCardIndex];
+  const isLandscape = mode === "headsup";
 
-  // Restrict orientations based on mode
   useEffect(() => {
-    if (mode === "headsup")
+    if (mode === "headsup") {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-    else if (mode === "password")
+      setGameState("waiting-forehead");
+    } else if (mode === "password") {
       ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP,
       );
-    else ScreenOrientation.unlockAsync(); // Taboo can be either
-
+      setGameState("countdown");
+    } else {
+      ScreenOrientation.unlockAsync();
+      setGameState("countdown");
+    }
     return () => {
       ScreenOrientation.unlockAsync();
     };
   }, [mode]);
 
-  useEffect(() => {
+  const startCountdownSequence = () => {
     startTurn();
     const countInterval = setInterval(() => {
       setCountdown((prev) => {
@@ -86,8 +92,19 @@ export default function PlayScreen() {
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(countInterval);
-  }, []);
+  };
+
+  useEffect(() => {
+    if (gameState === "countdown") {
+      startCountdownSequence();
+    }
+  }, [gameState]);
+
+  // Forehead detector: Once held flat on forehead, trigger countdown
+  useForeheadDetector(gameState === "waiting-forehead", () => {
+    setGameState("countdown");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  });
 
   const triggerTimeUp = () => {
     setGameState("timeup");
@@ -119,7 +136,7 @@ export default function PlayScreen() {
   };
 
   const animatedProgressStyle = useAnimatedStyle(() => ({
-    width: progress.value * dims.width, // Dynamically updates if orientation flips mid-turn
+    width: progress.value * dims.width,
   }));
 
   const handleAction = (action: "guessed" | "passed") => {
@@ -134,7 +151,7 @@ export default function PlayScreen() {
     );
     recordCardResult(currentCard.id, currentCard.word, action);
 
-    // Fast flash for better game pacing
+    // Fast flash
     setTimeout(() => {
       setFlashState("default");
       if (currentCardIndex + 1 >= cardsInRound.length) {
@@ -143,16 +160,27 @@ export default function PlayScreen() {
       } else {
         nextCard();
       }
-    }, 400);
+    }, 200);
   };
-
-  const isLandscapePhysical = dims.width > dims.height;
 
   useTiltControl(
     gameState === "playing" && flashState === "default" && mode === "headsup",
     () => handleAction("passed"),
     () => handleAction("guessed"),
   );
+
+  if (gameState === "waiting-forehead") {
+    return (
+      <View className="flex-1 bg-indigo-600 items-center justify-center p-8">
+        <Text className="text-white text-5xl font-black text-center mb-6">
+          Place on Forehead
+        </Text>
+        <Text className="text-white/80 text-xl font-medium text-center">
+          Hold the screen facing out
+        </Text>
+      </View>
+    );
+  }
 
   if (gameState === "countdown") {
     return (
@@ -207,7 +235,6 @@ export default function PlayScreen() {
         style={animatedProgressStyle}
       />
 
-      {/* Zero margin container filling remaining screen space */}
       <View className="flex-1 pb-0 pl-0 pr-0 pt-0">
         {/* The Playing Card */}
         <View
@@ -248,7 +275,7 @@ export default function PlayScreen() {
                       (w: string, i: number) => (
                         <Text
                           key={i}
-                          className="text-red-300 font-bold text-4xl mb-2"
+                          className="text-red-400 font-bold text-4xl mb-3"
                         >
                           {w}
                         </Text>
@@ -268,7 +295,7 @@ export default function PlayScreen() {
               className="flex-1 bg-orange-500 rounded-3xl items-center justify-center border-b-4 border-orange-700 active:mt-1 active:border-b-0"
             >
               <Text className="text-white text-3xl font-black tracking-wide">
-                nope.
+                pass..
               </Text>
             </TouchableOpacity>
             <TouchableOpacity

@@ -44,70 +44,93 @@ export default function MatchSummaryScreen() {
         </Text>
       </View>
 
-      <View className="bg-slate-900 rounded-3xl p-5 border border-slate-800 flex-1">
-        {/* Horizontal Scroll wrapper for columns */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={true}
-          bounces={false}
-        >
-          <View>
-            {/* Header Row */}
-            <View className="flex-row border-b border-slate-800 pb-3 mb-3">
-              <Text className="w-32 text-slate-400 font-bold uppercase text-[10px]">
-                Competitor
-              </Text>
-              {roundKeys.map((r) => (
-                <Text
-                  key={r}
-                  className="w-12 text-center text-slate-500 font-bold uppercase text-[10px]"
-                >
-                  R{r}
+      <View className="bg-slate-900 rounded-3xl border border-slate-800 flex-1 overflow-hidden">
+        {/* Main Vertical Scroll */}
+        <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
+          <View className="flex-row">
+            {/* Left Static Column (Competitor) */}
+            <View className="w-[120px] border-r border-slate-800 pr-3">
+              <View className="h-10 border-b border-slate-800 mb-2 justify-end pb-2">
+                <Text className="text-slate-400 font-bold uppercase text-[10px]">
+                  Competitor
                 </Text>
-              ))}
-              <Text className="w-16 text-right text-slate-400 font-bold uppercase text-[10px] ml-4">
-                Total
-              </Text>
-            </View>
-
-            {/* Entity Rows */}
-            <ScrollView showsVerticalScrollIndicator={false}>
+              </View>
               {sortedEntities.map((entity, index) => (
                 <View
                   key={entity.id}
-                  className="flex-row items-center py-3 border-b border-slate-800/50"
+                  className="h-14 flex-row items-center border-b border-slate-800/50"
                 >
-                  <View className="w-32 flex-row items-center pr-2">
-                    <Text
-                      className={`font-black text-sm w-5 ${index === 0 ? "text-amber-500" : "text-slate-600"}`}
-                    >
-                      #{index + 1}
-                    </Text>
-                    <Text
-                      className="text-white font-bold text-sm ml-1"
-                      numberOfLines={1}
-                    >
-                      {entity.name}
-                    </Text>
-                  </View>
+                  <Text
+                    className={`font-black text-xs w-5 ${index === 0 ? "text-amber-500" : "text-slate-600"}`}
+                  >
+                    #{index + 1}
+                  </Text>
+                  <Text
+                    className="text-white font-bold text-sm ml-1 flex-1"
+                    numberOfLines={1}
+                  >
+                    {entity.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
 
+            {/* Middle Horizontally Scrollable Area (Rounds) */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="flex-1"
+              bounces={false}
+            >
+              <View>
+                <View className="flex-row h-10 border-b border-slate-800 mb-2 items-end pb-2">
                   {roundKeys.map((r) => (
                     <Text
                       key={r}
-                      className="w-12 text-center text-slate-400 font-medium text-xs"
+                      className="w-14 text-center text-slate-500 font-bold uppercase text-[10px]"
                     >
-                      {roundScores[r]?.[entity.id] ?? "-"}
+                      R{r}
                     </Text>
                   ))}
+                </View>
+                {sortedEntities.map((entity) => (
+                  <View
+                    key={entity.id}
+                    className="flex-row h-14 items-center border-b border-slate-800/50"
+                  >
+                    {roundKeys.map((r) => (
+                      <Text
+                        key={r}
+                        className="w-14 text-center text-slate-400 font-medium text-sm"
+                      >
+                        {roundScores[r]?.[entity.id] ?? "-"}
+                      </Text>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
 
+            {/* Right Static Column (Total) */}
+            <View className="w-16 border-l border-slate-800 pl-3">
+              <View className="h-10 border-b border-slate-800 mb-2 justify-end pb-2">
+                <Text className="text-slate-400 font-bold uppercase text-[10px] text-right">
+                  Total
+                </Text>
+              </View>
+              {sortedEntities.map((entity, index) => (
+                <View
+                  key={entity.id}
+                  className="h-14 justify-center border-b border-slate-800/50"
+                >
                   <Text
-                    className={`w-16 text-right font-black text-xl ml-4 ${index === 0 ? "text-amber-500" : "text-white"}`}
+                    className={`text-right font-black text-xl ${index === 0 ? "text-amber-500" : "text-white"}`}
                   >
                     {totals[entity.id]}
                   </Text>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
         </ScrollView>
       </View>

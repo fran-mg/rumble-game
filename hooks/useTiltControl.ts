@@ -5,8 +5,8 @@ type TiltDirection = "up" | "down" | "center";
 
 export function useTiltControl(
   isActive: boolean,
-  onTiltUp: () => void, // Pass
-  onTiltDown: () => void, // Correct
+  onTiltUp: () => void, // Face to Sky -> Pass
+  onTiltDown: () => void, // Face to Floor -> Correct
 ) {
   const [tilt, setTilt] = useState<TiltDirection>("center");
   const isCooldown = useRef(false);
@@ -17,16 +17,14 @@ export function useTiltControl(
       return;
     }
 
-    Accelerometer.setUpdateInterval(150);
+    Accelerometer.setUpdateInterval(100);
 
     const subscription = Accelerometer.addListener(({ z }) => {
       if (isCooldown.current) return;
 
-      // Forehead Landscape Math:
-      // z ≈ 0 (screen vertical to floor)
-      // z > 0.5 (screen tilting towards floor -> Correct)
-      // z < -0.5 (screen tilting towards ceiling -> Pass)
-
+      // In Landscape:
+      // z > 0.45 means phone screen is tilting towards the floor
+      // z < -0.45 means phone screen is tilting towards the ceiling
       const threshold = 0.45;
 
       if (z > threshold && tilt !== "down") {
@@ -46,11 +44,31 @@ export function useTiltControl(
   const triggerAction = (action: () => void) => {
     isCooldown.current = true;
     action();
-    // Shorter cooldown for fast gameplay
+    // Shorter cooldown for fast frantic party gameplay
     setTimeout(() => {
       isCooldown.current = false;
-    }, 600);
+    }, 400);
   };
 
   return tilt;
+}
+
+// Standalone function to detect when phone is held to forehead
+export function useForeheadDetector(isActive: boolean, onDetected: () => void) {
+  useEffect(() => {
+    if (!isActive) {
+      Accelerometer.removeAllListeners();
+      return;
+    }
+
+    Accelerometer.setUpdateInterval(200);
+    const sub = Accelerometer.addListener(({ x, z }) => {
+      // Upright in landscape = high X gravity, Z near 0 (flat screen facing out)
+      if (Math.abs(x) > 0.7 && Math.abs(z) < 0.4) {
+        onDetected();
+      }
+    });
+
+    return () => sub.remove();
+  }, [isActive, onDetected]);
 }
