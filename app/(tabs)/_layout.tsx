@@ -38,13 +38,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="teams"
-        options={{
-          title: "Teams",
-          tabBarIcon: ({ color }) => <TabBarIcon name="users" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="decks"
         options={{
           title: "Decks",
@@ -58,6 +51,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="database" color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="match-test"
+        options={{
+          title: "Match Test",
+          tabBarIcon: ({ color }) => <TabBarIcon name="anchor" color={color} />,
         }}
       />
     </Tabs>

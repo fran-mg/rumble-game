@@ -7,14 +7,14 @@ export type ScoringStyle = "rounds" | "boardgame";
 export type PlayStyle = "single" | "team";
 type CardResult = "guessed" | "passed";
 
-interface MatchPlayer {
-  id: string;
+export interface MatchPlayer {
+  id: number;
   name: string;
-  teamId?: string; // null if single player
+  teamId: number;
 }
 
-interface MatchTeam {
-  id: string;
+export interface MatchTeam {
+  id: number;
   name: string;
   color: string;
 }
@@ -23,43 +23,39 @@ interface TurnHistory {
   cardId: number;
   word: string;
   result: CardResult;
+  isEdited: boolean;
 }
 
 interface GameState {
-  // Settings
   mode: GameMode;
   scoringStyle: ScoringStyle;
   playStyle: PlayStyle;
-  targetLimit: number | "Infinity"; // Rounds count OR Tile count
+  targetLimit: number | "Infinity";
   timerDuration: number;
 
-  // Roster
   matchTeams: MatchTeam[];
   matchPlayers: MatchPlayer[];
 
-  // Match State
   isPlaying: boolean;
   isPaused: boolean;
   currentRound: number;
-  currentTurnIndex: number; // Index of the player/team currently playing
+  currentTurnIndex: number;
 
-  // Scoring (roundNum -> entityId -> score)
-  roundScores: Record<number, Record<string, number>>;
+  roundScores: Record<number, Record<number, number>>;
   turnHistory: TurnHistory[];
   turnScore: number;
   turnPasses: number;
 
-  // Deck State
   cardsInRound: any[];
   currentCardIndex: number;
 
-  // Actions
   setupMatch: (config: Partial<GameState>) => void;
   updateSettingsMidGame: (config: Partial<GameState>) => void;
   startTurn: () => void;
   endTurn: () => void;
   endMatch: () => void;
   recordCardResult: (cardId: number, word: string, result: CardResult) => void;
+  toggleHistoryResult: (index: number) => void;
   nextCard: () => void;
   setPaused: (paused: boolean) => void;
 }
@@ -100,9 +96,7 @@ export const useGameStore = create<GameState>()(
         });
       },
 
-      updateSettingsMidGame: (config) => {
-        set({ ...config });
-      },
+      updateSettingsMidGame: (config) => set({ ...config }),
 
       startTurn: () => {
         set({
@@ -124,12 +118,9 @@ export const useGameStore = create<GameState>()(
           matchTeams,
           matchPlayers,
         } = get();
-
-        // Determine who just played
         const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
         const currentEntity = activeRoster[currentTurnIndex];
 
-        // Save score for this round & entity
         const newRoundScores = { ...roundScores };
         if (!newRoundScores[currentRound]) newRoundScores[currentRound] = {};
         newRoundScores[currentRound][currentEntity.id] = turnScore;
@@ -137,23 +128,39 @@ export const useGameStore = create<GameState>()(
         set({ roundScores: newRoundScores });
       },
 
-      endMatch: () => {
-        set({ isPlaying: false, currentRound: 1, currentTurnIndex: 0 });
-      },
+      endMatch: () =>
+        set({ isPlaying: false, currentRound: 1, currentTurnIndex: 0 }),
 
       recordCardResult: (cardId, word, result) => {
         const { turnHistory, turnScore, turnPasses } = get();
         set({
-          turnHistory: [...turnHistory, { cardId, word, result }],
+          turnHistory: [
+            ...turnHistory,
+            { cardId, word, result, isEdited: false },
+          ],
           turnScore: result === "guessed" ? turnScore + 1 : turnScore,
           turnPasses: result === "passed" ? turnPasses + 1 : turnPasses,
         });
       },
 
-      nextCard: () => {
-        set((state) => ({ currentCardIndex: state.currentCardIndex + 1 }));
+      toggleHistoryResult: (index: number) => {
+        const { turnHistory, turnScore, turnPasses } = get();
+        const newHistory = [...turnHistory];
+        const item = newHistory[index];
+
+        if (item.result === "guessed") {
+          item.result = "passed";
+          set({ turnScore: turnScore - 1, turnPasses: turnPasses + 1 });
+        } else {
+          item.result = "guessed";
+          set({ turnScore: turnScore + 1, turnPasses: turnPasses - 1 });
+        }
+        item.isEdited = true;
+        set({ turnHistory: newHistory });
       },
 
+      nextCard: () =>
+        set((state) => ({ currentCardIndex: state.currentCardIndex + 1 })),
       setPaused: (paused) => set({ isPaused: paused }),
     }),
     {

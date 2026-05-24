@@ -30,18 +30,17 @@ export default function RoundSummaryScreen() {
 
   const [showExitModal, setShowExitModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-
-  // Dynamic Edit Settings state
   const [editLimit, setEditLimit] = useState(String(targetLimit));
   const [editTimer, setEditTimer] = useState(String(gameStore.timerDuration));
 
   const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
   const currentEntity = activeRoster[currentTurnIndex];
 
-  // Logic Engine
   const isLastTurnOfRound = currentTurnIndex === activeRoster.length - 1;
   const isLastRound = targetLimit !== "Infinity" && currentRound >= targetLimit;
   const isMatchOver = isLastTurnOfRound && isLastRound;
+  const isFinalRound =
+    targetLimit !== "Infinity" && currentRound === targetLimit;
 
   const nextEntity = isLastTurnOfRound
     ? activeRoster[0]
@@ -49,7 +48,7 @@ export default function RoundSummaryScreen() {
 
   const handleNext = () => {
     if (isMatchOver) {
-      router.replace("/game/match-summary");
+      router.replace("/game/match-summary" as any);
     } else {
       useGameStore.setState((state) => ({
         currentTurnIndex:
@@ -61,15 +60,21 @@ export default function RoundSummaryScreen() {
             ? state.currentRound + 1
             : state.currentRound,
       }));
-      router.replace("/game/play");
+      router.replace("/game/play" as any);
     }
   };
 
   const handleSaveSettings = () => {
-    const newLim =
-      editLimit === "Infinity"
-        ? "Infinity"
-        : Math.max(currentRound, parseInt(editLimit) || currentRound);
+    let newLim: number | "Infinity" = "Infinity";
+    if (editLimit !== "Infinity") {
+      const parsed = parseInt(editLimit) || currentRound;
+      // Depending on style, limit differs
+      if (gameStore.scoringStyle === "rounds")
+        newLim = Math.min(20, Math.max(currentRound, parsed));
+      if (gameStore.scoringStyle === "boardgame")
+        newLim = Math.min(30, Math.max(5, parsed)); // Abstracting "furthest tile" concept to 5 minimum for simplicity
+    }
+
     gameStore.updateSettingsMidGame({
       targetLimit: newLim,
       timerDuration: Math.min(180, Math.max(10, parseInt(editTimer) || 60)),
@@ -77,17 +82,19 @@ export default function RoundSummaryScreen() {
     setShowSettingsModal(false);
   };
 
-  // Header string logic
+  // Dynamic Text Logic
   const headerText = isLastTurnOfRound
     ? `Round ${currentRound} Complete`
     : `Round ${currentRound}`;
-  const buttonText = isMatchOver
-    ? "Reveal Final Scores"
-    : `${nextEntity?.name} Start Turn`;
+  let buttonText = `${nextEntity?.name} Start Turn`;
+  if (isMatchOver) buttonText = "Reveal Final Scores";
+  else if (isLastTurnOfRound && isFinalRound)
+    buttonText = `${nextEntity?.name} Start Final Round`;
+  else if (isLastTurnOfRound)
+    buttonText = `${nextEntity?.name} Start Round ${currentRound + 1}`;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
-      {/* Top Navigation Bar */}
       <View className="flex-row justify-between px-6 pt-4">
         <TouchableOpacity onPress={() => setShowSettingsModal(true)}>
           <LucideIcons.Settings color="#94A3B8" size={28} />
@@ -102,10 +109,8 @@ export default function RoundSummaryScreen() {
           {headerText}
         </Text>
 
-        {/* Calculate total score for current entity up to this round */}
         <Text className="text-white text-2xl text-center mb-3">
-          Total <Text className="font-medium">{currentEntity?.name}</Text>{" "}
-          Score:{" "}
+          Total <Text className="font-bold">{currentEntity?.name}</Text> Score:{" "}
           <Text className="font-black text-blue-400">
             {Object.values(roundScores).reduce(
               (acc, round) => acc + (round[currentEntity.id] || 0),
@@ -134,29 +139,42 @@ export default function RoundSummaryScreen() {
         </View>
       </View>
 
-      {/* Passed / Correct List */}
       <ScrollView className="flex-1 px-6 py-4">
         {turnHistory.map((item, index) => (
           <View
             key={index}
             className="py-3 border-b border-slate-900 flex-row justify-between items-center"
           >
-            <Text
-              className={`text-xl font-bold ${item.result === "guessed" ? "text-green-400" : "text-orange-400 line-through opacity-70"}`}
+            <View className="flex-row items-center flex-1 pr-4">
+              {item.isEdited && (
+                <LucideIcons.RefreshCw
+                  color="#64748B"
+                  size={12}
+                  className="mr-2"
+                />
+              )}
+              <Text
+                className={`text-xl font-bold ${item.result === "guessed" ? "text-green-400" : "text-orange-400 line-through opacity-70"}`}
+              >
+                {item.word}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => gameStore.toggleHistoryResult(index)}
+              className={`px-3 py-1 rounded-lg border ${item.result === "guessed" ? "bg-green-500/20 border-green-500" : "bg-orange-500/20 border-orange-500"}`}
             >
-              {item.word}
-            </Text>
-            <Text
-              className={`font-black ${item.result === "guessed" ? "text-green-500" : "text-orange-500"}`}
-            >
-              {item.result === "guessed" ? "+1" : "0"}
-            </Text>
+              <Text
+                className={`font-black ${item.result === "guessed" ? "text-green-500" : "text-orange-500"}`}
+              >
+                {item.result === "guessed" ? "+1" : "0"}
+              </Text>
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
 
-      {/* Action Button */}
-      <View className="p-6">
+      <View className="p-6 pt-2">
         <TouchableOpacity
           onPress={handleNext}
           className="bg-blue-600 rounded-2xl py-5 items-center shadow-lg"
@@ -167,9 +185,7 @@ export default function RoundSummaryScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* ---------------- MODALS ---------------- */}
-
-      {/* Exit Modal */}
+      {/* EXIT MODAL */}
       <Modal visible={showExitModal} transparent animationType="fade">
         <View className="flex-1 bg-black/80 justify-center items-center p-6">
           <View className="bg-slate-900 p-6 rounded-3xl w-full border border-slate-800">
@@ -177,8 +193,7 @@ export default function RoundSummaryScreen() {
               End Match Here?
             </Text>
             <Text className="text-slate-400 text-center mb-8">
-              This will skip remaining rounds and go straight to the final
-              results screen.
+              This skips remaining turns and goes straight to final results.
             </Text>
             <View className="flex-row gap-4">
               <TouchableOpacity
@@ -190,7 +205,7 @@ export default function RoundSummaryScreen() {
               <TouchableOpacity
                 onPress={() => {
                   setShowExitModal(false);
-                  router.replace("/game/match-summary");
+                  router.replace("/game/match-summary" as any);
                 }}
                 className="flex-1 bg-red-600 py-4 rounded-xl items-center"
               >
@@ -201,49 +216,55 @@ export default function RoundSummaryScreen() {
         </View>
       </Modal>
 
-      {/* Mid-Game Settings Edit Modal */}
+      {/* SETTINGS MODAL */}
       <Modal visible={showSettingsModal} transparent animationType="slide">
         <View className="flex-1 bg-black/80 justify-end">
-          <View className="bg-slate-900 p-6 rounded-t-3xl border-t border-slate-800 h-2/3">
-            <Text className="text-white text-2xl font-black mb-6">
-              Edit Rules
-            </Text>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }}
+          >
+            <View className="bg-slate-900 p-6 rounded-t-3xl border-t border-slate-800 min-h-[50%]">
+              <Text className="text-white text-2xl font-black mb-6">
+                Mid-Game Adjustments
+              </Text>
 
-            <Text className="text-slate-400 font-bold mb-2">
-              Target Rounds (Must be ≥ {currentRound})
-            </Text>
-            <TextInput
-              value={editLimit}
-              onChangeText={setEditLimit}
-              keyboardType="number-pad"
-              className="bg-slate-950 text-white p-4 rounded-xl font-bold mb-6"
-            />
+              <Text className="text-slate-400 font-bold mb-2">
+                Target{" "}
+                {gameStore.scoringStyle === "rounds" ? "Rounds" : "Tiles"} (Min:{" "}
+                {currentRound})
+              </Text>
+              <TextInput
+                value={editLimit}
+                onChangeText={setEditLimit}
+                keyboardType="number-pad"
+                className="bg-slate-950 text-white p-4 rounded-xl font-bold mb-6 border border-slate-800"
+              />
 
-            <Text className="text-slate-400 font-bold mb-2">
-              Timer Length (Seconds)
-            </Text>
-            <TextInput
-              value={editTimer}
-              onChangeText={setEditTimer}
-              keyboardType="number-pad"
-              className="bg-slate-950 text-white p-4 rounded-xl font-bold mb-8"
-            />
+              <Text className="text-slate-400 font-bold mb-2">
+                Timer Length (10s - 180s)
+              </Text>
+              <TextInput
+                value={editTimer}
+                onChangeText={setEditTimer}
+                keyboardType="number-pad"
+                className="bg-slate-950 text-white p-4 rounded-xl font-bold mb-8 border border-slate-800"
+              />
 
-            <View className="flex-row gap-4 mt-auto mb-8">
-              <TouchableOpacity
-                onPress={() => setShowSettingsModal(false)}
-                className="flex-1 bg-slate-800 py-4 rounded-xl items-center"
-              >
-                <Text className="text-white font-bold">Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSaveSettings}
-                className="flex-1 bg-blue-600 py-4 rounded-xl items-center"
-              >
-                <Text className="text-white font-bold">Save Changes</Text>
-              </TouchableOpacity>
+              <View className="flex-row gap-4 mt-auto mb-4">
+                <TouchableOpacity
+                  onPress={() => setShowSettingsModal(false)}
+                  className="flex-1 bg-slate-800 py-4 rounded-xl items-center"
+                >
+                  <Text className="text-white font-bold">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSaveSettings}
+                  className="flex-1 bg-blue-600 py-4 rounded-xl items-center"
+                >
+                  <Text className="text-white font-bold">Save Changes</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>

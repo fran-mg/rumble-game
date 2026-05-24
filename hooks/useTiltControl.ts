@@ -5,8 +5,8 @@ type TiltDirection = "up" | "down" | "center";
 
 export function useTiltControl(
   isActive: boolean,
-  onTiltUp: () => void, // Usually "Pass"
-  onTiltDown: () => void, // Usually "Correct"
+  onTiltUp: () => void, // Pass
+  onTiltDown: () => void, // Correct
 ) {
   const [tilt, setTilt] = useState<TiltDirection>("center");
   const isCooldown = useRef(false);
@@ -17,29 +17,25 @@ export function useTiltControl(
       return;
     }
 
-    Accelerometer.setUpdateInterval(150); // Fast enough to feel responsive, slow enough to save battery
+    Accelerometer.setUpdateInterval(150);
 
-    const subscription = Accelerometer.addListener(({ y, z }) => {
+    const subscription = Accelerometer.addListener(({ z }) => {
       if (isCooldown.current) return;
 
-      // Note: Values depend on device orientation.
-      // Assuming Portrait mode: y > 0.6 is tilted back (up), y < -0.6 is tilted forward (down)
-      // Assuming Landscape mode (often used for this game): z axis is primarily used.
-      // We will check Y for portrait testing.
+      // Forehead Landscape Math:
+      // z ≈ 0 (screen vertical to floor)
+      // z > 0.5 (screen tilting towards floor -> Correct)
+      // z < -0.5 (screen tilting towards ceiling -> Pass)
 
-      const tiltThreshold = 0.55;
+      const threshold = 0.45;
 
-      if (y > tiltThreshold && tilt !== "up") {
-        setTilt("up");
-        triggerAction(onTiltUp);
-      } else if (y < -tiltThreshold && tilt !== "down") {
+      if (z > threshold && tilt !== "down") {
         setTilt("down");
         triggerAction(onTiltDown);
-      } else if (
-        y >= -tiltThreshold &&
-        y <= tiltThreshold &&
-        tilt !== "center"
-      ) {
+      } else if (z < -threshold && tilt !== "up") {
+        setTilt("up");
+        triggerAction(onTiltUp);
+      } else if (z >= -threshold && z <= threshold && tilt !== "center") {
         setTilt("center");
       }
     });
@@ -50,10 +46,10 @@ export function useTiltControl(
   const triggerAction = (action: () => void) => {
     isCooldown.current = true;
     action();
-    // 800ms cooldown so they have time to bring the phone back to center
+    // Shorter cooldown for fast gameplay
     setTimeout(() => {
       isCooldown.current = false;
-    }, 800);
+    }, 600);
   };
 
   return tilt;
