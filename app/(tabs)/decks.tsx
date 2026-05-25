@@ -16,6 +16,7 @@ import { useDeckStore } from "../../stores/useDeckStore";
 import { generateDeckViaAI } from "../../utils/aiGenerator";
 import db from "../../utils/database";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
+import { injectExtendedSampleDecks } from "../../utils/sampleDeckInjector";
 
 export default function DecksScreen() {
   const theme = useAppTheme();
@@ -24,6 +25,7 @@ export default function DecksScreen() {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isInjecting, setIsInjecting] = useState<boolean>(false);
 
   const [editingDeck, setEditingDeck] = useState<any | null>(null);
   const [deckCards, setDeckCards] = useState<any[]>([]);
@@ -41,6 +43,18 @@ export default function DecksScreen() {
   const handleToggleDeck = async (id: number) => {
     await toggleDeckSelection(id);
     await loadDecks();
+  };
+
+  const handleAddSampleData = async () => {
+    setIsInjecting(true);
+    try {
+      await injectExtendedSampleDecks(decks.length, loadDecks);
+    } catch (err) {
+      Alert.alert("Error", "Failed to populate test decks.");
+      console.error(err);
+    } finally {
+      setIsInjecting(false);
+    }
   };
 
   const triggerAIGeneration = async () => {
@@ -135,7 +149,7 @@ export default function DecksScreen() {
   return (
     <SafeAreaView className={`flex-1 ${theme.background} p-4`}>
       {/* AI Forge Control Box */}
-      <View className={`${theme.surface} border p-4 rounded-2xl mb-6`}>
+      <View className={`${theme.surface} border p-4 rounded-2xl mb-3`}>
         <Text
           className={`${theme.textPrimary} font-black text-sm uppercase tracking-wider mb-2`}
         >
@@ -162,6 +176,25 @@ export default function DecksScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Local Seeding Control Box */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handleAddSampleData}
+        disabled={isInjecting}
+        className="bg-blue-600 rounded-2xl py-3.5 items-center justify-center mb-6 flex-row gap-2 shadow-lg shadow-blue-500/20"
+      >
+        {isInjecting ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <>
+            <LucideIcons.PlusCircle color="white" size={18} />
+            <Text className="text-white font-extrabold text-sm tracking-tight uppercase">
+              Inject Extended Sample Decks
+            </Text>
+          </>
+        )}
+      </TouchableOpacity>
 
       {/* Category Navigation Bar */}
       <View className="mb-4">
@@ -206,6 +239,7 @@ export default function DecksScreen() {
               >
                 <View
                   className={`p-3 rounded-xl ${isSelected ? "bg-blue-600" : theme.inputBg}`}
+                  style={{ backgroundColor: "pink" }}
                 >
                   <LucideIcons.Layers
                     color={isSelected ? "white" : theme.iconColor}
@@ -242,7 +276,6 @@ export default function DecksScreen() {
           );
         })}
       </ScrollView>
-
       {/* Roster Expansion Matrix Drawer Overlay */}
       <Modal visible={editingDeck !== null} animationType="slide" transparent>
         <SafeAreaView className="flex-1 bg-black/40 p-4 justify-end">
