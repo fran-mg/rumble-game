@@ -1,13 +1,122 @@
 import * as LucideIcons from "lucide-react-native";
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import React, { useRef, useState } from "react";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
+import {
+  NestableDraggableFlatList,
+  RenderItemParams,
+} from "react-native-draggable-flatlist";
 import { PlayStyle } from "../../../stores/useGameStore";
+import { useRosterStore } from "../../../stores/useRosterStore";
+import { Participant } from "../../../utils/database";
+import ParticipantItem from "./_ParticipantItem";
 
-export default function ParticipantSelector() {
-  return null;
+interface ParticipantSelectorProps {
+  playStyle: PlayStyle;
+  onPlayStyleChange: (style: PlayStyle) => void;
 }
 
-// ─── HEADER (includes play style toggle) ──────────────────────────────────────
+export default function ParticipantSelector({
+  playStyle,
+  onPlayStyleChange,
+}: ParticipantSelectorProps) {
+  const {
+    participants,
+    addParticipant,
+    updateParticipant,
+    deleteParticipant,
+    reorderParticipants,
+  } = useRosterStore();
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const isNewItemRef = useRef(false);
+
+  const label = playStyle === "solo" ? "player" : "team";
+
+  // ── Edit lifecycle ─────────────────────────────────────────────────────────
+
+  const handleBeginEdit = (id: number, currentName: string) => {
+    isNewItemRef.current = currentName === "";
+    setEditingId(id);
+    setEditName(currentName);
+  };
+
+  const handleConfirmEdit = () => {
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      Alert.alert("Name required", `Please give this ${label} a name.`);
+      return;
+    }
+    updateParticipant(editingId!, trimmed);
+    setEditingId(null);
+    isNewItemRef.current = false;
+  };
+
+  const handleCancelEdit = (id: number) => {
+    if (isNewItemRef.current) {
+      deleteParticipant(id);
+    }
+    setEditingId(null);
+    isNewItemRef.current = false;
+  };
+
+  const handleDelete = (id: number) => {
+    if (participants.length <= 1) {
+      Alert.alert("Can't remove", `You need at least one ${label}.`);
+      return;
+    }
+    deleteParticipant(id);
+  };
+
+  const handleAdd = () => {
+    addParticipant(playStyle);
+    setTimeout(() => {
+      const latest = useRosterStore.getState().participants.at(-1);
+      if (latest) handleBeginEdit(latest.id, "");
+    }, 30);
+  };
+
+  // ── Render Items ───────────────────────────────────────────────────────────
+
+  const renderItem = (params: RenderItemParams<Participant>) => (
+    <ParticipantItem
+      {...params}
+      playStyle={playStyle}
+      editingId={editingId}
+      editName={editName}
+      onEditNameChange={setEditName}
+      onBeginEdit={handleBeginEdit}
+      onConfirmEdit={handleConfirmEdit}
+      onCancelEdit={handleCancelEdit}
+      onDelete={handleDelete}
+    />
+  );
+
+  return (
+    <View className="mb-6">
+      <ParticipantSelectorHeader
+        playStyle={playStyle}
+        onPlayStyleChange={onPlayStyleChange}
+      />
+
+      <View className="bg-slate-900 border-x border-slate-800 px-4 pt-1">
+        <NestableDraggableFlatList
+          data={participants}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          onDragEnd={({ data }) => reorderParticipants(data)}
+          activationDistance={8}
+        />
+      </View>
+
+      <ParticipantSelectorFooter
+        playStyle={playStyle}
+        onAdd={handleAdd}
+        participantCount={participants.length}
+      />
+    </View>
+  );
+}
 
 interface ParticipantSelectorHeaderProps {
   playStyle: PlayStyle;
@@ -18,11 +127,8 @@ export function ParticipantSelectorHeader({
   playStyle,
   onPlayStyleChange,
 }: ParticipantSelectorHeaderProps) {
-  const label = playStyle === "solo" ? "Player" : "Team";
-
   return (
     <View className="bg-slate-900 border border-slate-800 rounded-t-3xl px-5 pt-5 pb-3">
-      {/* Play style toggle (moved from MatchSetupHeader) */}
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-slate-400 font-bold uppercase tracking-widest text-xs">
           Participant Select
@@ -50,8 +156,6 @@ export function ParticipantSelectorHeader({
   );
 }
 
-// ─── FOOTER (add button) ──────────────────────────────────────────────────────
-
 interface ParticipantSelectorFooterProps {
   playStyle: PlayStyle;
   onAdd: () => void;
@@ -67,8 +171,7 @@ export function ParticipantSelectorFooter({
 
   return (
     <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl px-4 pb-5 pt-1 mb-0">
-      {/* Participant count and drag hint */}
-      <View className="flex-row items-center justify-between">
+      <View className="flex-row items-center justify-between mb-2">
         <Text className="text-slate-500 text-xs font-bold uppercase tracking-widest">
           {participantCount} {participantCount === 1 ? label : `${label}s`}
         </Text>
@@ -77,7 +180,7 @@ export function ParticipantSelectorFooter({
           <Text className="text-slate-600 text-xs">drag to reorder</Text>
         </View>
       </View>
-      <View className="mb-2">
+      <View>
         <TouchableOpacity
           onPress={onAdd}
           activeOpacity={0.7}

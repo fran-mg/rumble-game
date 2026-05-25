@@ -47,7 +47,7 @@ export default function ParticipantItem({
           elevation: isActive ? 8 : 0,
         }}
         className={[
-          "flex-row items-center rounded-2xl border-2 px-2 py-3",
+          "flex-row items-center rounded-2xl border-2 mx-2 mb-2 px-2 py-3",
           isTeam ? "bg-slate-800" : "bg-slate-900/80",
         ].join(" ")}
       >
