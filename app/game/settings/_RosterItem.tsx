@@ -43,11 +43,14 @@ export default function RosterItem({
           className={`border-x-2 border-t-2 rounded-t-2xl p-3 shadow-lg mt-3 ${isActive ? "border-b-2 rounded-b-2xl border-blue-500 z-50" : ""}`}
         >
           <View className="flex-row justify-between items-center">
+            {/* FIXED: Better drag handle with hitSlop */}
             <TouchableOpacity
-              onPressIn={drag}
+              onLongPress={drag}
+              delayLongPress={100}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               className="p-2 -ml-2 active:opacity-50"
             >
-              <LucideIcons.GripVertical color="#64748B" size={20} />
+              <LucideIcons.GripVertical color="#64748B" size={24} />
             </TouchableOpacity>
 
             {editingId === item.id ? (
@@ -67,7 +70,10 @@ export default function RosterItem({
             <View className="flex-row gap-3">
               {editingId === item.id ? (
                 <>
-                  <TouchableOpacity onPress={handleSaveEdit}>
+                  <TouchableOpacity
+                    onPress={handleSaveEdit}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
                     <LucideIcons.Check color="#10B981" size={20} />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -75,6 +81,7 @@ export default function RosterItem({
                       setEditingId(null);
                       if (!item.name) handleDeleteEntity(item.id, "team");
                     }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <LucideIcons.X color="#EF4444" size={20} />
                   </TouchableOpacity>
@@ -86,11 +93,13 @@ export default function RosterItem({
                       setEditingId(item.id);
                       setEditName(item.name);
                     }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <LucideIcons.Edit3 color="#64748B" size={18} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDeleteEntity(item.id, "team")}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <LucideIcons.Trash2 color="#EF4444" size={18} />
                   </TouchableOpacity>
@@ -109,11 +118,14 @@ export default function RosterItem({
         style={{ borderColor: teamColor }}
         className={`flex-row items-center bg-slate-950/80 p-3 border-x-2 border-b-2 ${playStyle === "single" ? "rounded-xl border-t-2 mb-2 border-slate-800" : ""} ${isActive ? "opacity-80 scale-105 shadow-xl border-blue-500 rounded-xl border-t-2 z-50" : ""}`}
       >
+        {/* FIXED: Better drag handle for players */}
         <TouchableOpacity
-          onPressIn={drag}
+          onLongPress={drag}
+          delayLongPress={100}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           className="p-2 -ml-2 active:opacity-50"
         >
-          <LucideIcons.GripVertical color="#64748B" size={18} />
+          <LucideIcons.GripVertical color="#64748B" size={20} />
         </TouchableOpacity>
 
         {editingId === item.id ? (
@@ -133,7 +145,10 @@ export default function RosterItem({
         <View className="flex-row gap-3">
           {editingId === item.id ? (
             <>
-              <TouchableOpacity onPress={handleSaveEdit}>
+              <TouchableOpacity
+                onPress={handleSaveEdit}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <LucideIcons.Check color="#10B981" size={18} />
               </TouchableOpacity>
               <TouchableOpacity
@@ -141,6 +156,7 @@ export default function RosterItem({
                   setEditingId(null);
                   if (!item.name) handleDeleteEntity(item.id, "player");
                 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <LucideIcons.X color="#EF4444" size={18} />
               </TouchableOpacity>
@@ -152,11 +168,13 @@ export default function RosterItem({
                   setEditingId(item.id);
                   setEditName(item.name);
                 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <LucideIcons.Edit3 color="#64748B" size={16} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleDeleteEntity(item.id, "player")}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <LucideIcons.Trash2 color="#EF4444" size={16} />
               </TouchableOpacity>

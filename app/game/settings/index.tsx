@@ -282,6 +282,9 @@ export default function SettingsScreen() {
           renderItem={renderItemWrapper}
           contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
+          // ADD THESE PROPS:
+          activationDistance={10} // Reduced from default 0 - helps with drag detection
+          containerStyle={{ flex: 1 }}
           ListHeaderComponent={
             <MatchSetupHeader
               scoringStyle={scoringStyle}
