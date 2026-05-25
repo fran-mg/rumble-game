@@ -18,6 +18,7 @@ import {
   useGameStore,
 } from "../../../stores/useGameStore";
 import { useRosterStore } from "../../../stores/useRosterStore";
+import { Participant } from "../../../utils/database";
 import DeckSelector from "./_DeckSelector";
 import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
@@ -38,7 +39,11 @@ export default function SettingsScreen() {
   const gameStore = useGameStore();
   const { participants, initRoster } = useRosterStore();
 
-  const scrollRef = useRef<any>(null); // Ref to control our scroll view
+  const scrollRef = useRef<any>(null);
+
+  // Cache to remember participants when switching between Solo and Team styles
+  const cachedTeamsRef = useRef<Participant[] | null>(null);
+  const cachedSolosRef = useRef<Participant[] | null>(null);
 
   const [scoringStyle, setScoringStyle] = useState<ScoringStyle>("rounds");
   const [targetLimit, setTargetLimit] = useState<number | "Infinity">(3);
@@ -49,13 +54,41 @@ export default function SettingsScreen() {
   useEffect(() => {
     loadDecks();
     initRoster("team");
+    // Ensure caches are wiped clean on fresh page loads
+    cachedTeamsRef.current = null;
+    cachedSolosRef.current = null;
   }, []);
 
   // ── Settings handlers ──────────────────────────────────────────────────────
 
   const handlePlayStyleChange = (style: PlayStyle) => {
+    if (style === playStyle) return;
+
+    // 1. Save the CURRENT participants into the appropriate cache
+    const currentParticipants = useRosterStore.getState().participants;
+    if (playStyle === "team") {
+      cachedTeamsRef.current = currentParticipants;
+    } else {
+      cachedSolosRef.current = currentParticipants;
+    }
+
+    // 2. Switch the style
     setPlayStyle(style);
-    initRoster(style);
+
+    // 3. Load from cache if it exists, otherwise initialize fresh ones
+    if (style === "team") {
+      if (cachedTeamsRef.current) {
+        useRosterStore.setState({ participants: cachedTeamsRef.current });
+      } else {
+        initRoster("team");
+      }
+    } else {
+      if (cachedSolosRef.current) {
+        useRosterStore.setState({ participants: cachedSolosRef.current });
+      } else {
+        initRoster("solo");
+      }
+    }
   };
 
   const handleScoringStyleChange = (style: ScoringStyle) => {
@@ -74,8 +107,6 @@ export default function SettingsScreen() {
   // ── Keyboard Auto-Scroll Handler ───────────────────────────────────────────
 
   const handleScrollRequest = (yPos: number) => {
-    // We delay the scroll by 300ms to allow the mobile keyboard time to slide up
-    // and KeyboardAvoidingView time to adjust the screen size.
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: yPos, animated: true });
     }, 300);

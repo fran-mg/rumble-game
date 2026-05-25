@@ -1,5 +1,5 @@
 import * as LucideIcons from "lucide-react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import {
   NestableDraggableFlatList,
@@ -31,10 +31,20 @@ export default function ParticipantSelector({
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
-  const [containerY, setContainerY] = useState(0); // Track where this component sits on the screen
+  const [containerY, setContainerY] = useState(0);
   const isNewItemRef = useRef(false);
 
   const label = playStyle === "solo" ? "player" : "team";
+
+  // ── Mode Switch effect ─────────────────────────────────────────────────────
+
+  useEffect(() => {
+    // Force clear any active edits if the user switches PlayStyle (Solo <-> Team)
+    // while their keyboard is open and editing.
+    setEditingId(null);
+    setEditName("");
+    isNewItemRef.current = false;
+  }, [playStyle]);
 
   // ── Edit lifecycle ─────────────────────────────────────────────────────────
 
@@ -43,19 +53,13 @@ export default function ParticipantSelector({
     setEditingId(id);
     setEditName(currentName);
 
-    // Calculate position and request scroll
     const freshParticipants = useRosterStore.getState().participants;
     const index = freshParticipants.findIndex((p) => p.id === id);
 
     if (index !== -1) {
-      const HEADER_HEIGHT = 64; // Approx height of the ParticipantSelector header
-      const ITEM_HEIGHT = 64; // Approx height of a ParticipantItem
-
-      // Calculate target Y coordinate.
-      // Subtracting 120 keeps the item comfortably in the upper-middle half of the screen.
+      const HEADER_HEIGHT = 64;
+      const ITEM_HEIGHT = 64;
       const targetY = containerY + HEADER_HEIGHT + index * ITEM_HEIGHT - 120;
-
-      // Ensure we don't try to scroll into negative Y bounds
       onScrollRequest(Math.max(0, targetY));
     }
   };
@@ -90,7 +94,6 @@ export default function ParticipantSelector({
   const handleAdd = () => {
     addParticipant(playStyle);
 
-    // Timeout so Zustand store has new array updated before handleBeginEdit executes
     setTimeout(() => {
       const latest = useRosterStore.getState().participants.at(-1);
       if (latest) handleBeginEdit(latest.id, "");
@@ -116,7 +119,7 @@ export default function ParticipantSelector({
   return (
     <View
       className="mb-6"
-      onLayout={(e) => setContainerY(e.nativeEvent.layout.y)} // Measure container's vertical placement globally
+      onLayout={(e) => setContainerY(e.nativeEvent.layout.y)}
     >
       <ParticipantSelectorHeader
         playStyle={playStyle}
@@ -141,6 +144,8 @@ export default function ParticipantSelector({
     </View>
   );
 }
+
+// ─── HEADER (includes play style toggle) ──────────────────────────────────────
 
 interface ParticipantSelectorHeaderProps {
   playStyle: PlayStyle;
@@ -179,6 +184,8 @@ export function ParticipantSelectorHeader({
     </View>
   );
 }
+
+// ─── FOOTER (add button) ──────────────────────────────────────────────────────
 
 interface ParticipantSelectorFooterProps {
   playStyle: PlayStyle;
