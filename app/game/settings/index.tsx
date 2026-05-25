@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import DraggableFlatList, {
+  RenderItemParams,
+} from "react-native-draggable-flatlist";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../../stores/useDeckStore";
 import {
@@ -17,20 +19,32 @@ import {
   useGameStore,
 } from "../../../stores/useGameStore";
 import { useRosterStore } from "../../../stores/useRosterStore";
+import { Participant } from "../../../utils/database";
 import DeckSelector from "./_DeckSelector";
 import MatchSetupHeader from "./_MatchSetupHeader";
-import PlayerSelector from "./_PlayerSelector";
+import {
+  PlayerSelectorFooter,
+  PlayerSelectorHeader,
+  RosterItem,
+} from "./_PlayerSelector";
 import TimerSelector from "./_TimerSelector";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const selectedMode = (params.mode as any) || "headsup";
+  const selectedMode = (params.mode as any) || "articulate";
 
   const { decks, selectedDeckIds, loadDecks, toggleDeckSelection } =
     useDeckStore();
   const gameStore = useGameStore();
-  const { participants, initRoster } = useRosterStore();
+  const {
+    participants,
+    initRoster,
+    addParticipant,
+    updateParticipant,
+    deleteParticipant,
+    reorderParticipants,
+  } = useRosterStore();
 
   const [scoringStyle, setScoringStyle] = useState<ScoringStyle>("rounds");
   const [targetLimit, setTargetLimit] = useState<number | "Infinity">(3);
@@ -38,12 +52,15 @@ export default function SettingsScreen() {
   const [timerDuration, setTimerDuration] = useState(60);
   const [isDecksExpanded, setIsDecksExpanded] = useState(false);
 
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const isNewItemRef = useRef(false);
+
   useEffect(() => {
     loadDecks();
-    initRoster(playStyle);
+    initRoster("team");
   }, []);
 
-  // Re-initialise roster when play style switches so defaults make sense
   const handlePlayStyleChange = (style: PlayStyle) => {
     setPlayStyle(style);
     initRoster(style);
@@ -51,15 +68,69 @@ export default function SettingsScreen() {
 
   const handleScoringStyleChange = (style: ScoringStyle) => {
     setScoringStyle(style);
-    if (style === "rounds")
+    if (style === "rounds") {
       setTargetLimit((prev) =>
         prev !== "Infinity" ? Math.min(20, Math.max(1, prev)) : 3,
       );
-    if (style === "boardgame")
+    } else {
       setTargetLimit((prev) =>
         prev !== "Infinity" ? Math.min(30, Math.max(5, prev)) : 30,
       );
+    }
   };
+
+  // ── Edit lifecycle ─────────────────────────────────────────────────────────
+
+  const label = playStyle === "solo" ? "Player" : "Team";
+
+  const handleBeginEdit = (id: number, currentName: string) => {
+    isNewItemRef.current = currentName === "";
+    setEditingId(id);
+    setEditName(currentName);
+  };
+
+  const handleConfirmEdit = () => {
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      Alert.alert(
+        "Name required",
+        `Please give this ${label.toLowerCase()} a name.`,
+      );
+      return;
+    }
+    updateParticipant(editingId!, trimmed);
+    setEditingId(null);
+    isNewItemRef.current = false;
+  };
+
+  const handleCancelEdit = (id: number) => {
+    if (isNewItemRef.current) {
+      deleteParticipant(id);
+    }
+    setEditingId(null);
+    isNewItemRef.current = false;
+  };
+
+  const handleDelete = (id: number) => {
+    if (participants.length <= 1) {
+      Alert.alert(
+        "Can't remove",
+        `You need at least one ${label.toLowerCase()}.`,
+      );
+      return;
+    }
+    deleteParticipant(id);
+  };
+
+  const handleAdd = () => {
+    addParticipant(playStyle);
+    setTimeout(() => {
+      const latest = useRosterStore.getState().participants.at(-1);
+      if (latest) handleBeginEdit(latest.id, "");
+    }, 30);
+  };
+
+  // ── Start game ─────────────────────────────────────────────────────────────
 
   const handleStartGame = async () => {
     await useDeckStore.getState().loadCardsForSelectedDecks();
@@ -71,7 +142,6 @@ export default function SettingsScreen() {
       return;
     }
 
-    // Validate — every participant must have a non-empty name
     const namedParticipants = participants.filter(
       (p) => p.name.trim().length > 0,
     );
@@ -79,7 +149,7 @@ export default function SettingsScreen() {
     if (namedParticipants.length < 2) {
       Alert.alert(
         "Not enough players",
-        `You need at least 2 ${playStyle === "team" ? "teams" : "players"} to start.`,
+        `You need at least 2 ${playStyle === "team" ? "teams" : "players"}.`,
       );
       return;
     }
@@ -97,10 +167,24 @@ export default function SettingsScreen() {
     router.replace("/game/play");
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  const namedCount = participants.filter((p) => p.name.trim()).length;
   const participantLabel = playStyle === "team" ? "Teams" : "Players";
-  const namedCount = participants.filter(
-    (p) => p.name.trim().length > 0,
-  ).length;
+
+  const renderItem = (params: RenderItemParams<Participant>) => (
+    <RosterItem
+      {...params}
+      playStyle={playStyle}
+      editingId={editingId}
+      editName={editName}
+      setEditName={setEditName}
+      onBeginEdit={handleBeginEdit}
+      onConfirmEdit={handleConfirmEdit}
+      onCancelEdit={handleCancelEdit}
+      onDelete={handleDelete}
+    />
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
@@ -108,34 +192,51 @@ export default function SettingsScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView
+        {/* 
+          Single DraggableFlatList renders participants AND scrolls the page.
+          No nested lists = no gesture conflicts with the slider.
+        */}
+        <DraggableFlatList
+          data={participants}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          onDragEnd={({ data }) => reorderParticipants(data)}
           contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
-        >
-          <MatchSetupHeader
-            scoringStyle={scoringStyle}
-            handleScoringStyleChange={handleScoringStyleChange}
-            targetLimit={targetLimit}
-            setTargetLimit={setTargetLimit}
-            playStyle={playStyle}
-            setPlayStyle={handlePlayStyleChange}
-          />
-
-          <PlayerSelector playStyle={playStyle} />
-
-          <DeckSelector
-            decks={decks}
-            selectedDeckIds={selectedDeckIds}
-            isDecksExpanded={isDecksExpanded}
-            setIsDecksExpanded={setIsDecksExpanded}
-            toggleDeckSelection={toggleDeckSelection}
-          />
-
-          <TimerSelector
-            timerDuration={timerDuration}
-            setTimerDuration={setTimerDuration}
-          />
-        </ScrollView>
+          activationDistance={8}
+          ListHeaderComponent={
+            <>
+              <MatchSetupHeader
+                scoringStyle={scoringStyle}
+                handleScoringStyleChange={handleScoringStyleChange}
+                targetLimit={targetLimit}
+                setTargetLimit={setTargetLimit}
+                playStyle={playStyle}
+                setPlayStyle={handlePlayStyleChange}
+              />
+              <PlayerSelectorHeader
+                playStyle={playStyle}
+                participantCount={participants.length}
+              />
+            </>
+          }
+          ListFooterComponent={
+            <>
+              <PlayerSelectorFooter playStyle={playStyle} onAdd={handleAdd} />
+              <DeckSelector
+                decks={decks}
+                selectedDeckIds={selectedDeckIds}
+                isDecksExpanded={isDecksExpanded}
+                setIsDecksExpanded={setIsDecksExpanded}
+                toggleDeckSelection={toggleDeckSelection}
+              />
+              <TimerSelector
+                timerDuration={timerDuration}
+                setTimerDuration={setTimerDuration}
+              />
+            </>
+          }
+        />
       </KeyboardAvoidingView>
 
       {/* Sticky start button */}

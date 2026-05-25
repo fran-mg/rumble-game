@@ -32,6 +32,22 @@ export default function TimerSelector({
           thumbTintColor="#FFFFFF"
         />
       </View>
+
+      {/* Tick marks for visual reference */}
+      <View className="flex-row justify-between px-2 mt-1">
+        {[10, 45, 90, 135, 180].map((mark) => (
+          <Text
+            key={mark}
+            className={`text-xs ${
+              timerDuration === mark
+                ? "text-indigo-400 font-bold"
+                : "text-slate-700"
+            }`}
+          >
+            {mark}s
+          </Text>
+        ))}
+      </View>
     </View>
   );
 }
