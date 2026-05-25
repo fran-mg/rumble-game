@@ -4,13 +4,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import DraggableFlatList, {
-  RenderItemParams,
-} from "react-native-draggable-flatlist";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../../stores/useDeckStore";
 import {
@@ -20,7 +18,7 @@ import {
 } from "../../../stores/useGameStore";
 import DeckSelector from "./_DeckSelector";
 import MatchSetupHeader from "./_MatchSetupHeader";
-import RosterItem from "./_RosterItem";
+import PlayerSelector from "./_PlayerSelector";
 import TimerSelector from "./_TimerSelector";
 
 export type ListItem =
@@ -79,6 +77,52 @@ export default function SettingsScreen() {
           ? Math.min(30, Math.max(5, targetLimit))
           : 30,
       );
+  };
+
+  const handlePlayStyleChange = (style: PlayStyle) => {
+    const currentPlayers = rosterData.filter((i) => i.type === "player");
+    const currentTeams = rosterData.filter((i) => i.type === "team");
+
+    if (style === "single") {
+      // Switch to solo mode - keep all players, remove team associations visually
+      setRosterData([...currentTeams, ...currentPlayers]);
+    } else if (style === "team") {
+      // Switch to team mode
+      if (currentTeams.length === 0) {
+        // Create a default team if none exist
+        const defaultTeam: ListItem = {
+          type: "team",
+          id: generateNumId(),
+          name: "Team 1",
+          color: PRESET_COLORS[0],
+        };
+        // Assign all players to this team
+        const updatedPlayers = currentPlayers.map((p) => ({
+          ...p,
+          teamId: defaultTeam.id,
+        }));
+        setRosterData([defaultTeam, ...updatedPlayers]);
+      } else {
+        // Teams exist, just ensure players are assigned
+        const firstTeamId = currentTeams[0].id;
+        const updatedPlayers = currentPlayers.map((p) => ({
+          ...p,
+          teamId: p.teamId || firstTeamId,
+        }));
+
+        // Rebuild roster with teams and their players grouped
+        const newRoster: ListItem[] = [];
+        currentTeams.forEach((team) => {
+          newRoster.push(team);
+          const teamPlayers = updatedPlayers.filter(
+            (p) => p.teamId === team.id,
+          );
+          newRoster.push(...teamPlayers);
+        });
+        setRosterData(newRoster);
+      }
+    }
+    setPlayStyle(style);
   };
 
   const getUnusedColor = () => {
@@ -150,52 +194,6 @@ export default function SettingsScreen() {
     setEditingId(null);
   };
 
-  const handleDragEnd = ({
-    data,
-    from,
-  }: {
-    data: ListItem[];
-    from: number;
-  }) => {
-    const activeListItems =
-      playStyle === "single"
-        ? rosterData.filter((i) => i.type === "player")
-        : rosterData;
-    const movedItem = activeListItems[from];
-
-    if (playStyle === "single") {
-      const teams = rosterData.filter((i) => i.type === "team");
-      setRosterData([...teams, ...data]);
-      return;
-    }
-
-    if (movedItem?.type === "team") {
-      // Re-stitch players directly beneath the newly positioned team header
-      const teamPlayers = rosterData.filter(
-        (i) => i.type === "player" && i.teamId === movedItem.id,
-      );
-      let newData = data.filter(
-        (i) => !(i.type === "player" && i.teamId === movedItem.id),
-      );
-
-      const newHeaderIndex = newData.findIndex((i) => i.id === movedItem.id);
-      newData.splice(newHeaderIndex + 1, 0, ...teamPlayers);
-
-      setRosterData(newData);
-    } else {
-      // Re-assign a player to whatever visual team bracket they were dropped into
-      let currentTeamId = data.find((i) => i.type === "team")?.id || 1;
-      const newData = data.map((item) => {
-        if (item.type === "team") {
-          currentTeamId = item.id;
-          return item;
-        }
-        return { ...item, teamId: currentTeamId };
-      });
-      setRosterData(newData);
-    }
-  };
-
   const handleStartGame = async () => {
     await useDeckStore.getState().loadCardsForSelectedDecks();
     const cards = useDeckStore.getState().currentCards;
@@ -241,109 +239,52 @@ export default function SettingsScreen() {
     router.replace("/game/play");
   };
 
-  const renderItemWrapper = (params: RenderItemParams<ListItem>) => {
-    const itemTeamId =
-      params.item.type === "player" ? params.item.teamId : null;
-    const team = rosterData.find(
-      (i) => i.type === "team" && i.id === itemTeamId,
-    ) as any;
-    const teamColor = playStyle === "team" && team ? team.color : "#1E293B";
-
-    return (
-      <RosterItem
-        {...params}
-        playStyle={playStyle}
-        teamColor={teamColor}
-        editingId={editingId}
-        editName={editName}
-        setEditName={setEditName}
-        setEditingId={setEditingId}
-        handleSaveEdit={handleSaveEdit}
-        handleDeleteEntity={handleDeleteEntity}
-      />
-    );
-  };
-
-  const activeListItems =
-    playStyle === "single"
-      ? rosterData.filter((i) => i.type === "player")
-      : rosterData;
-
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <DraggableFlatList
-          data={activeListItems}
-          onDragEnd={handleDragEnd}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderItemWrapper}
+        <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
-          // ADD THESE PROPS:
-          activationDistance={10} // Reduced from default 0 - helps with drag detection
-          containerStyle={{ flex: 1 }}
-          ListHeaderComponent={
-            <MatchSetupHeader
-              scoringStyle={scoringStyle}
-              handleScoringStyleChange={handleScoringStyleChange}
-              targetLimit={targetLimit}
-              setTargetLimit={setTargetLimit}
-              playStyle={playStyle}
-              setPlayStyle={setPlayStyle}
-            />
-          }
-          ListFooterComponent={
-            <>
-              <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl p-5 pt-0 mb-4">
-                {playStyle === "team" ? (
-                  <View className="flex-row gap-2 mt-4">
-                    <TouchableOpacity
-                      onPress={handleAddTeam}
-                      className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
-                    >
-                      <Text className="text-slate-400 font-bold text-xs">
-                        + Add Team
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleAddPlayer()}
-                      className="flex-1 border border-dashed border-slate-700 rounded-xl py-3 items-center"
-                    >
-                      <Text className="text-slate-400 font-bold text-xs">
-                        + Add Player
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => handleAddPlayer()}
-                    className="border border-dashed border-slate-700 rounded-xl py-3 items-center mt-4"
-                  >
-                    <Text className="text-slate-400 font-bold">
-                      + Add Solo Player
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+        >
+          <MatchSetupHeader
+            scoringStyle={scoringStyle}
+            handleScoringStyleChange={handleScoringStyleChange}
+            targetLimit={targetLimit}
+            setTargetLimit={setTargetLimit}
+            playStyle={playStyle}
+            setPlayStyle={handlePlayStyleChange}
+          />
 
-              <DeckSelector
-                decks={decks}
-                selectedDeckIds={selectedDeckIds}
-                isDecksExpanded={isDecksExpanded}
-                setIsDecksExpanded={setIsDecksExpanded}
-                toggleDeckSelection={toggleDeckSelection}
-              />
+          <PlayerSelector
+            playStyle={playStyle}
+            rosterData={rosterData}
+            setRosterData={setRosterData}
+            editingId={editingId}
+            editName={editName}
+            setEditName={setEditName}
+            setEditingId={setEditingId}
+            handleSaveEdit={handleSaveEdit}
+            handleDeleteEntity={handleDeleteEntity}
+            handleAddTeam={handleAddTeam}
+            handleAddPlayer={handleAddPlayer}
+          />
 
-              <TimerSelector
-                timerDuration={timerDuration}
-                setTimerDuration={setTimerDuration}
-              />
-            </>
-          }
-        />
+          <DeckSelector
+            decks={decks}
+            selectedDeckIds={selectedDeckIds}
+            isDecksExpanded={isDecksExpanded}
+            setIsDecksExpanded={setIsDecksExpanded}
+            toggleDeckSelection={toggleDeckSelection}
+          />
+
+          <TimerSelector
+            timerDuration={timerDuration}
+            setTimerDuration={setTimerDuration}
+          />
+        </ScrollView>
       </KeyboardAvoidingView>
 
       <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/90 border-t border-slate-900">
