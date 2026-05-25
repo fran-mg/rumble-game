@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  LogBox,
   Platform,
   Text,
   TouchableOpacity,
@@ -22,6 +23,11 @@ import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
 
+// Suppress known harmless warning from react-native-draggable-flatlist
+LogBox.ignoreLogs([
+  "Warning: ref.measureLayout must be called with a ref to a native component",
+]);
+
 export default function SettingsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -31,6 +37,8 @@ export default function SettingsScreen() {
     useDeckStore();
   const gameStore = useGameStore();
   const { participants, initRoster } = useRosterStore();
+
+  const scrollRef = useRef<any>(null); // Ref to control our scroll view
 
   const [scoringStyle, setScoringStyle] = useState<ScoringStyle>("rounds");
   const [targetLimit, setTargetLimit] = useState<number | "Infinity">(3);
@@ -61,6 +69,16 @@ export default function SettingsScreen() {
         prev !== "Infinity" ? Math.min(30, Math.max(5, prev)) : 30,
       );
     }
+  };
+
+  // ── Keyboard Auto-Scroll Handler ───────────────────────────────────────────
+
+  const handleScrollRequest = (yPos: number) => {
+    // We delay the scroll by 300ms to allow the mobile keyboard time to slide up
+    // and KeyboardAvoidingView time to adjust the screen size.
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: yPos, animated: true });
+    }, 300);
   };
 
   // ── Start game ─────────────────────────────────────────────────────────────
@@ -112,15 +130,15 @@ export default function SettingsScreen() {
         className="flex-1"
       >
         <NestableScrollContainer
+          ref={scrollRef}
           contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Page title */}
           <Text className="text-3xl font-black text-white tracking-tight mb-6">
             Match Setup
           </Text>
 
-          {/* Scoring style selector */}
           <ScoringStyleSelector
             scoringStyle={scoringStyle}
             onScoringStyleChange={handleScoringStyleChange}
@@ -128,13 +146,12 @@ export default function SettingsScreen() {
             onTargetLimitChange={setTargetLimit}
           />
 
-          {/* Participant selector */}
           <ParticipantSelector
             playStyle={playStyle}
             onPlayStyleChange={handlePlayStyleChange}
+            onScrollRequest={handleScrollRequest}
           />
 
-          {/* Deck selector */}
           <DeckSelector
             decks={decks}
             selectedDeckIds={selectedDeckIds}
@@ -143,7 +160,6 @@ export default function SettingsScreen() {
             toggleDeckSelection={toggleDeckSelection}
           />
 
-          {/* Timer selector */}
           <TimerSelector
             timerDuration={timerDuration}
             setTimerDuration={setTimerDuration}
@@ -151,11 +167,10 @@ export default function SettingsScreen() {
         </NestableScrollContainer>
       </KeyboardAvoidingView>
 
-      {/* Sticky start button */}
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/95 border-t border-slate-900">
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/95 border-t border-slate-900 pointer-events-none">
         <TouchableOpacity
           onPress={handleStartGame}
-          className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg"
+          className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg pointer-events-auto"
         >
           <Text className="text-white font-black text-xl tracking-wide uppercase">
             Start Game

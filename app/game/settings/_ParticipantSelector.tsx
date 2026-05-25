@@ -13,11 +13,13 @@ import ParticipantItem from "./_ParticipantItem";
 interface ParticipantSelectorProps {
   playStyle: PlayStyle;
   onPlayStyleChange: (style: PlayStyle) => void;
+  onScrollRequest: (y: number) => void;
 }
 
 export default function ParticipantSelector({
   playStyle,
   onPlayStyleChange,
+  onScrollRequest,
 }: ParticipantSelectorProps) {
   const {
     participants,
@@ -29,6 +31,7 @@ export default function ParticipantSelector({
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [containerY, setContainerY] = useState(0); // Track where this component sits on the screen
   const isNewItemRef = useRef(false);
 
   const label = playStyle === "solo" ? "player" : "team";
@@ -39,6 +42,22 @@ export default function ParticipantSelector({
     isNewItemRef.current = currentName === "";
     setEditingId(id);
     setEditName(currentName);
+
+    // Calculate position and request scroll
+    const freshParticipants = useRosterStore.getState().participants;
+    const index = freshParticipants.findIndex((p) => p.id === id);
+
+    if (index !== -1) {
+      const HEADER_HEIGHT = 64; // Approx height of the ParticipantSelector header
+      const ITEM_HEIGHT = 64; // Approx height of a ParticipantItem
+
+      // Calculate target Y coordinate.
+      // Subtracting 120 keeps the item comfortably in the upper-middle half of the screen.
+      const targetY = containerY + HEADER_HEIGHT + index * ITEM_HEIGHT - 120;
+
+      // Ensure we don't try to scroll into negative Y bounds
+      onScrollRequest(Math.max(0, targetY));
+    }
   };
 
   const handleConfirmEdit = () => {
@@ -70,10 +89,12 @@ export default function ParticipantSelector({
 
   const handleAdd = () => {
     addParticipant(playStyle);
+
+    // Timeout so Zustand store has new array updated before handleBeginEdit executes
     setTimeout(() => {
       const latest = useRosterStore.getState().participants.at(-1);
       if (latest) handleBeginEdit(latest.id, "");
-    }, 30);
+    }, 50);
   };
 
   // ── Render Items ───────────────────────────────────────────────────────────
@@ -93,7 +114,10 @@ export default function ParticipantSelector({
   );
 
   return (
-    <View className="mb-6">
+    <View
+      className="mb-6"
+      onLayout={(e) => setContainerY(e.nativeEvent.layout.y)} // Measure container's vertical placement globally
+    >
       <ParticipantSelectorHeader
         playStyle={playStyle}
         onPlayStyleChange={onPlayStyleChange}
