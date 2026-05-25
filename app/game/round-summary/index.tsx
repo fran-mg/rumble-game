@@ -13,8 +13,7 @@ export default function RoundSummaryScreen() {
   const gameStore = useGameStore();
   const {
     playStyle,
-    matchTeams,
-    matchPlayers,
+    participants,
     currentTurnIndex,
     currentRound,
     targetLimit,
@@ -30,18 +29,15 @@ export default function RoundSummaryScreen() {
   const [editLimit, setEditLimit] = useState(String(targetLimit));
   const [editTimer, setEditTimer] = useState(String(gameStore.timerDuration));
 
-  const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
-  const currentEntity = activeRoster[currentTurnIndex];
+  const currentEntity = participants[currentTurnIndex];
 
-  const isLastTurnOfRound = currentTurnIndex === activeRoster.length - 1;
+  const isLastTurnOfRound = currentTurnIndex === participants.length - 1;
   const isLastRound = targetLimit !== "Infinity" && currentRound >= targetLimit;
   const isMatchOver = isLastTurnOfRound && isLastRound;
   const isFinalRound =
     targetLimit !== "Infinity" && currentRound === targetLimit;
 
-  const nextEntity = isLastTurnOfRound
-    ? activeRoster[0]
-    : activeRoster[currentTurnIndex + 1];
+  const nextEntity = participants[(currentTurnIndex + 1) % participants.length];
 
   const handleNext = () => {
     if (isMatchOver) {
@@ -49,11 +45,11 @@ export default function RoundSummaryScreen() {
     } else {
       useGameStore.setState((state) => ({
         currentTurnIndex:
-          state.currentTurnIndex === activeRoster.length - 1
+          state.currentTurnIndex === participants.length - 1
             ? 0
             : state.currentTurnIndex + 1,
         currentRound:
-          state.currentTurnIndex === activeRoster.length - 1
+          state.currentTurnIndex === participants.length - 1
             ? state.currentRound + 1
             : state.currentRound,
       }));

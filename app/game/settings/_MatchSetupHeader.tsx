@@ -104,8 +104,8 @@ export default function MatchSetupHeader({
           </Text>
           <View className="flex-row gap-2">
             <TouchableOpacity
-              onPress={() => setPlayStyle("single")}
-              className={`px-3 py-1 rounded-lg ${playStyle === "single" ? "bg-blue-600" : "bg-slate-800"}`}
+              onPress={() => setPlayStyle("solo")}
+              className={`px-3 py-1 rounded-lg ${playStyle === "solo" ? "bg-blue-600" : "bg-slate-800"}`}
             >
               <Text className="text-white text-xs font-bold">Solos</Text>
             </TouchableOpacity>

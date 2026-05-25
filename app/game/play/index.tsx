@@ -39,9 +39,7 @@ export default function PlayScreen() {
 
   const {
     mode,
-    playStyle,
-    matchTeams,
-    matchPlayers,
+    participants,
     currentTurnIndex,
     cardsInRound,
     currentCardIndex,
@@ -60,8 +58,7 @@ export default function PlayScreen() {
   const [displayTime, setDisplayTime] = useState(timerDuration);
 
   const progress = useSharedValue(1);
-  const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
-  const currentEntity = activeRoster[currentTurnIndex];
+  const currentEntity = participants[currentTurnIndex];
   const currentCard = cardsInRound[currentCardIndex];
 
   useEffect(() => {

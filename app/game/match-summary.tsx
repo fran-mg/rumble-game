@@ -7,20 +7,18 @@ import { useGameStore } from "../../stores/useGameStore";
 
 export default function MatchSummaryScreen() {
   const router = useRouter();
-  const { playStyle, matchTeams, matchPlayers, roundScores, endMatch } =
-    useGameStore();
+  const { playStyle, participants, roundScores, endMatch } = useGameStore();
 
-  const activeRoster = playStyle === "team" ? matchTeams : matchPlayers;
   const totals: Record<number, number> = {};
 
-  activeRoster.forEach((entity) => {
+  participants.forEach((entity) => {
     totals[entity.id] = Object.values(roundScores).reduce(
       (acc, round) => acc + (round[entity.id] || 0),
       0,
     );
   });
 
-  const sortedEntities = [...activeRoster].sort(
+  const sortedEntities = [...participants].sort(
     (a, b) => totals[b.id] - totals[a.id],
   );
   const winner = sortedEntities[0];
