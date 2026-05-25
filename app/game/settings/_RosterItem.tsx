@@ -43,10 +43,8 @@ export default function RosterItem({
           className={`border-x-2 border-t-2 rounded-t-2xl p-3 shadow-lg mt-3 ${isActive ? "border-b-2 rounded-b-2xl border-blue-500 z-50" : ""}`}
         >
           <View className="flex-row justify-between items-center">
-            {/* Standard TouchableOpacity safely fires the drag intent */}
             <TouchableOpacity
-              onLongPress={drag}
-              delayLongPress={150}
+              onPressIn={drag}
               className="p-2 -ml-2 active:opacity-50"
             >
               <LucideIcons.GripVertical color="#64748B" size={20} />
@@ -112,8 +110,7 @@ export default function RosterItem({
         className={`flex-row items-center bg-slate-950/80 p-3 border-x-2 border-b-2 ${playStyle === "single" ? "rounded-xl border-t-2 mb-2 border-slate-800" : ""} ${isActive ? "opacity-80 scale-105 shadow-xl border-blue-500 rounded-xl border-t-2 z-50" : ""}`}
       >
         <TouchableOpacity
-          onLongPress={drag}
-          delayLongPress={150}
+          onPressIn={drag}
           className="p-2 -ml-2 active:opacity-50"
         >
           <LucideIcons.GripVertical color="#64748B" size={18} />
