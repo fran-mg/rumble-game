@@ -21,12 +21,12 @@ import {
 import { useRosterStore } from "../../../stores/useRosterStore";
 import { Participant } from "../../../utils/database";
 import DeckSelector from "./_DeckSelector";
-import MatchSetupHeader from "./_MatchSetupHeader";
+import ParticipantItem from "./_ParticipantItem";
 import {
-  PlayerSelectorFooter,
-  PlayerSelectorHeader,
-  RosterItem,
-} from "./_PlayerSelector";
+  ParticipantSelectorFooter,
+  ParticipantSelectorHeader,
+} from "./_ParticipantSelector";
+import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
 
 export default function SettingsScreen() {
@@ -61,6 +61,8 @@ export default function SettingsScreen() {
     initRoster("team");
   }, []);
 
+  // ── Settings handlers ──────────────────────────────────────────────────────
+
   const handlePlayStyleChange = (style: PlayStyle) => {
     setPlayStyle(style);
     initRoster(style);
@@ -81,7 +83,7 @@ export default function SettingsScreen() {
 
   // ── Edit lifecycle ─────────────────────────────────────────────────────────
 
-  const label = playStyle === "solo" ? "Player" : "Team";
+  const label = playStyle === "solo" ? "player" : "team";
 
   const handleBeginEdit = (id: number, currentName: string) => {
     isNewItemRef.current = currentName === "";
@@ -92,10 +94,7 @@ export default function SettingsScreen() {
   const handleConfirmEdit = () => {
     const trimmed = editName.trim();
     if (!trimmed) {
-      Alert.alert(
-        "Name required",
-        `Please give this ${label.toLowerCase()} a name.`,
-      );
+      Alert.alert("Name required", `Please give this ${label} a name.`);
       return;
     }
     updateParticipant(editingId!, trimmed);
@@ -113,10 +112,7 @@ export default function SettingsScreen() {
 
   const handleDelete = (id: number) => {
     if (participants.length <= 1) {
-      Alert.alert(
-        "Can't remove",
-        `You need at least one ${label.toLowerCase()}.`,
-      );
+      Alert.alert("Can't remove", `You need at least one ${label}.`);
       return;
     }
     deleteParticipant(id);
@@ -148,7 +144,7 @@ export default function SettingsScreen() {
 
     if (namedParticipants.length < 2) {
       Alert.alert(
-        "Not enough players",
+        "Not enough participants",
         `You need at least 2 ${playStyle === "team" ? "teams" : "players"}.`,
       );
       return;
@@ -173,12 +169,12 @@ export default function SettingsScreen() {
   const participantLabel = playStyle === "team" ? "Teams" : "Players";
 
   const renderItem = (params: RenderItemParams<Participant>) => (
-    <RosterItem
+    <ParticipantItem
       {...params}
       playStyle={playStyle}
       editingId={editingId}
       editName={editName}
-      setEditName={setEditName}
+      onEditNameChange={setEditName}
       onBeginEdit={handleBeginEdit}
       onConfirmEdit={handleConfirmEdit}
       onCancelEdit={handleCancelEdit}
@@ -192,10 +188,7 @@ export default function SettingsScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        {/* 
-          Single DraggableFlatList renders participants AND scrolls the page.
-          No nested lists = no gesture conflicts with the slider.
-        */}
+        {/* Single DraggableFlatList for both scrolling and participant reordering */}
         <DraggableFlatList
           data={participants}
           keyExtractor={(item) => String(item.id)}
@@ -206,23 +199,36 @@ export default function SettingsScreen() {
           activationDistance={8}
           ListHeaderComponent={
             <>
-              <MatchSetupHeader
+              {/* Page title */}
+              <Text className="text-3xl font-black text-white tracking-tight mb-6">
+                Match Setup
+              </Text>
+
+              {/* Scoring style selector */}
+              <ScoringStyleSelector
                 scoringStyle={scoringStyle}
-                handleScoringStyleChange={handleScoringStyleChange}
+                onScoringStyleChange={handleScoringStyleChange}
                 targetLimit={targetLimit}
-                setTargetLimit={setTargetLimit}
-                playStyle={playStyle}
-                setPlayStyle={handlePlayStyleChange}
+                onTargetLimitChange={setTargetLimit}
               />
-              <PlayerSelectorHeader
+
+              {/* Participant selector header (includes play style toggle) */}
+              <ParticipantSelectorHeader
                 playStyle={playStyle}
-                participantCount={participants.length}
+                onPlayStyleChange={handlePlayStyleChange}
               />
             </>
           }
           ListFooterComponent={
             <>
-              <PlayerSelectorFooter playStyle={playStyle} onAdd={handleAdd} />
+              {/* Participant selector footer (add button) */}
+              <ParticipantSelectorFooter
+                playStyle={playStyle}
+                onAdd={handleAdd}
+                participantCount={participants.length}
+              />
+
+              {/* Deck selector */}
               <DeckSelector
                 decks={decks}
                 selectedDeckIds={selectedDeckIds}
@@ -230,6 +236,8 @@ export default function SettingsScreen() {
                 setIsDecksExpanded={setIsDecksExpanded}
                 toggleDeckSelection={toggleDeckSelection}
               />
+
+              {/* Timer selector */}
               <TimerSelector
                 timerDuration={timerDuration}
                 setTimerDuration={setTimerDuration}
@@ -251,7 +259,9 @@ export default function SettingsScreen() {
           <Text className="text-emerald-200 text-xs mt-1 font-medium">
             {namedCount} {participantLabel} •{" "}
             {scoringStyle === "rounds"
-              ? `${targetLimit} Rounds`
+              ? targetLimit === "Infinity"
+                ? "∞ Rounds"
+                : `${targetLimit} Rounds`
               : `${targetLimit} Tiles`}{" "}
             • {timerDuration}s
           </Text>

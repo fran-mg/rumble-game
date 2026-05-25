@@ -8,32 +8,30 @@ import {
 import { PlayStyle } from "../../../stores/useGameStore";
 import { Participant } from "../../../utils/database";
 
-// ─── ROSTER ITEM RENDERER ─────────────────────────────────────────────────────
-
-interface RosterItemProps extends RenderItemParams<Participant> {
+export interface ParticipantItemProps extends RenderItemParams<Participant> {
   playStyle: PlayStyle;
   editingId: number | null;
   editName: string;
-  setEditName: (name: string) => void;
+  onEditNameChange: (name: string) => void;
   onBeginEdit: (id: number, currentName: string) => void;
   onConfirmEdit: () => void;
   onCancelEdit: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-export function RosterItem({
+export default function ParticipantItem({
   item,
   drag,
   isActive,
   playStyle,
   editingId,
   editName,
-  setEditName,
+  onEditNameChange,
   onBeginEdit,
   onConfirmEdit,
   onCancelEdit,
   onDelete,
-}: RosterItemProps) {
+}: ParticipantItemProps) {
   const isEditing = editingId === item.id;
   const isTeam = item.type === "team";
 
@@ -49,11 +47,11 @@ export function RosterItem({
           elevation: isActive ? 8 : 0,
         }}
         className={[
-          "flex-row items-center rounded-2xl border-2 px-2 py-3 mb-2",
+          "flex-row items-center rounded-2xl border-2 px-2 py-3",
           isTeam ? "bg-slate-800" : "bg-slate-900/80",
         ].join(" ")}
       >
-        {/* Drag handle */}
+        {/* ── Drag handle ───────────────────────────────────────────────── */}
         <TouchableOpacity
           onPressIn={drag}
           hitSlop={{ top: 12, bottom: 12, left: 4, right: 8 }}
@@ -66,17 +64,17 @@ export function RosterItem({
           />
         </TouchableOpacity>
 
-        {/* Color dot */}
+        {/* ── Color indicator ───────────────────────────────────────────── */}
         <View
           style={{ backgroundColor: item.color }}
           className="w-2.5 h-2.5 rounded-full mr-3 shrink-0"
         />
 
-        {/* Name / input */}
+        {/* ── Name display / edit input ─────────────────────────────────── */}
         {isEditing ? (
           <TextInput
             value={editName}
-            onChangeText={setEditName}
+            onChangeText={onEditNameChange}
             autoFocus
             maxLength={30}
             returnKeyType="done"
@@ -103,7 +101,7 @@ export function RosterItem({
           </Text>
         )}
 
-        {/* Action buttons */}
+        {/* ── Action buttons ────────────────────────────────────────────── */}
         <View className="flex-row items-center gap-4 ml-2 shrink-0">
           {isEditing ? (
             <>
@@ -139,58 +137,5 @@ export function RosterItem({
         </View>
       </View>
     </ScaleDecorator>
-  );
-}
-
-// ─── HEADER & FOOTER COMPONENTS ───────────────────────────────────────────────
-
-interface PlayerSelectorHeaderProps {
-  playStyle: PlayStyle;
-  participantCount: number;
-}
-
-export function PlayerSelectorHeader({
-  playStyle,
-  participantCount,
-}: PlayerSelectorHeaderProps) {
-  const label = playStyle === "solo" ? "Player" : "Team";
-
-  return (
-    <View className="bg-slate-900 border border-slate-800 rounded-t-3xl px-4 pt-5 pb-3">
-      <View className="flex-row items-center justify-between">
-        <Text className="text-slate-500 text-xs font-bold uppercase tracking-widest">
-          {participantCount} {participantCount === 1 ? label : `${label}s`}
-        </Text>
-        <View className="flex-row items-center gap-1.5">
-          <LucideIcons.GripVertical color="#334155" size={13} />
-          <Text className="text-slate-600 text-xs">drag to reorder</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-interface PlayerSelectorFooterProps {
-  playStyle: PlayStyle;
-  onAdd: () => void;
-}
-
-export function PlayerSelectorFooter({
-  playStyle,
-  onAdd,
-}: PlayerSelectorFooterProps) {
-  const label = playStyle === "solo" ? "Player" : "Team";
-
-  return (
-    <View className="bg-slate-900 border border-slate-800 border-t-0 rounded-b-3xl px-4 pb-5 pt-1 mb-4">
-      <TouchableOpacity
-        onPress={onAdd}
-        activeOpacity={0.7}
-        className="flex-row items-center justify-center gap-2 border border-dashed border-slate-700 rounded-xl py-3"
-      >
-        <LucideIcons.Plus color="#64748B" size={15} />
-        <Text className="text-slate-400 font-bold text-sm">Add {label}</Text>
-      </TouchableOpacity>
-    </View>
   );
 }
