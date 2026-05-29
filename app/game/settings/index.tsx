@@ -1,9 +1,8 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
-  LogBox,
   Platform,
   Text,
   TouchableOpacity,
@@ -24,15 +23,10 @@ import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
 
-// Suppress known harmless warning from react-native-draggable-flatlist
-LogBox.ignoreLogs([
-  "Warning: ref.measureLayout must be called with a ref to a native component",
-]);
-
 export default function SettingsScreen() {
-  const router = useRouter();
+  // Capture URL param exactly once on mount to prevent Expo Router context from crashing during heavy Zustand async state updates.
   const params = useLocalSearchParams();
-  const selectedMode = (params.mode as any) || "articulate";
+  const [selectedMode] = useState(() => (params.mode as any) || "articulate");
 
   const { decks, selectedDeckIds, loadDecks, toggleDeckSelection } =
     useDeckStore();
@@ -54,7 +48,6 @@ export default function SettingsScreen() {
   useEffect(() => {
     loadDecks();
     initRoster("team");
-    // Ensure caches are wiped clean on fresh page loads
     cachedTeamsRef.current = null;
     cachedSolosRef.current = null;
   }, []);
@@ -64,7 +57,6 @@ export default function SettingsScreen() {
   const handlePlayStyleChange = (style: PlayStyle) => {
     if (style === playStyle) return;
 
-    // 1. Save the CURRENT participants into the appropriate cache
     const currentParticipants = useRosterStore.getState().participants;
     if (playStyle === "team") {
       cachedTeamsRef.current = currentParticipants;
@@ -72,10 +64,8 @@ export default function SettingsScreen() {
       cachedSolosRef.current = currentParticipants;
     }
 
-    // 2. Switch the style
     setPlayStyle(style);
 
-    // 3. Load from cache if it exists, otherwise initialize fresh ones
     if (style === "team") {
       if (cachedTeamsRef.current) {
         useRosterStore.setState({ participants: cachedTeamsRef.current });
@@ -101,6 +91,19 @@ export default function SettingsScreen() {
       setTargetLimit((prev) =>
         prev !== "Infinity" ? Math.min(30, Math.max(5, prev)) : 30,
       );
+    }
+  };
+
+  const handleToggleDeck = async (id: number) => {
+    try {
+      await toggleDeckSelection(id);
+      // Decouple UI interaction from the heavy Zustand re-render using a micro-delay.
+      // This gives Expo Router time to breathe and avoids the navigation context tear.
+      setTimeout(() => {
+        loadDecks();
+      }, 10);
+    } catch (e) {
+      console.error("Failed to toggle deck:", e);
     }
   };
 
@@ -188,7 +191,7 @@ export default function SettingsScreen() {
             selectedDeckIds={selectedDeckIds}
             isDecksExpanded={isDecksExpanded}
             setIsDecksExpanded={setIsDecksExpanded}
-            toggleDeckSelection={toggleDeckSelection}
+            toggleDeckSelection={handleToggleDeck}
           />
 
           <TimerSelector
@@ -198,10 +201,10 @@ export default function SettingsScreen() {
         </NestableScrollContainer>
       </KeyboardAvoidingView>
 
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/95 border-t border-slate-900 pointer-events-none">
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/95 border-t border-slate-900">
         <TouchableOpacity
           onPress={handleStartGame}
-          className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg pointer-events-auto"
+          className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg"
         >
           <Text className="text-white font-black text-xl tracking-wide uppercase">
             Start Game

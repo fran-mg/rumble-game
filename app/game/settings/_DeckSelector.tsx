@@ -11,8 +11,8 @@ interface DeckSelectorProps {
 }
 
 export default function DeckSelector({
-  decks,
-  selectedDeckIds,
+  decks = [], // Default to empty array
+  selectedDeckIds = [], // Default to empty array to prevent undefined .includes()
   isDecksExpanded,
   setIsDecksExpanded,
   toggleDeckSelection,
@@ -48,7 +48,11 @@ export default function DeckSelector({
               <TouchableOpacity
                 key={deck.id}
                 onPress={() => toggleDeckSelection(deck.id)}
-                className={`px-3 py-2 rounded-xl border flex-row items-center gap-2 ${isSelected ? "bg-blue-600/30 border-blue-500 shadow-lg" : "bg-slate-950 border-slate-800 opacity-50"}`}
+                className={`px-3 py-2 rounded-xl border flex-row items-center gap-2 ${
+                  isSelected
+                    ? "bg-blue-600/30 border-blue-500 shadow-lg"
+                    : "bg-slate-950 border-slate-800 opacity-50"
+                }`}
               >
                 {isSelected && <LucideIcons.Check color="#3B82F6" size={14} />}
                 <Text

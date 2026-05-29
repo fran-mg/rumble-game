@@ -126,7 +126,13 @@ export default function ParticipantSelector({
         onPlayStyleChange={onPlayStyleChange}
       />
 
-      <View className="bg-slate-900 border-x border-slate-800 px-4 pt-1">
+      <View
+        style={{
+          backgroundColor: "#0f172a",
+          paddingHorizontal: 16,
+          paddingTop: 4,
+        }}
+      >
         <NestableDraggableFlatList
           data={participants}
           keyExtractor={(item) => String(item.id)}

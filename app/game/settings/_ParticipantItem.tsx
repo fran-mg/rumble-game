@@ -37,25 +37,30 @@ export default function ParticipantItem({
 
   return (
     <ScaleDecorator activeScale={1.03}>
+      {/* Use inline styles instead of className - required for drag library */}
       <View
         style={{
+          marginHorizontal: 8,
+          marginBottom: 8,
+          borderRadius: 16,
+          borderWidth: 2,
           borderColor: item.color,
+          backgroundColor: isTeam ? "#1e293b" : "rgba(15, 23, 42, 0.6)",
+          paddingHorizontal: 8,
+          paddingVertical: 12,
+          flexDirection: "row",
+          alignItems: "center",
           shadowColor: isActive ? item.color : "transparent",
           shadowOpacity: isActive ? 0.4 : 0,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 4 },
           elevation: isActive ? 8 : 0,
         }}
-        className={[
-          "flex-row items-center rounded-2xl border-2 mx-2 mb-2 px-2 py-3",
-          isTeam ? "bg-slate-800" : "bg-slate-900/80",
-        ].join(" ")}
       >
-        {/* ── Drag handle ───────────────────────────────────────────────── */}
         <TouchableOpacity
           onPressIn={drag}
           hitSlop={{ top: 12, bottom: 12, left: 4, right: 8 }}
-          className="px-2"
+          style={{ paddingHorizontal: 8 }}
           disabled={isEditing}
         >
           <LucideIcons.GripVertical
@@ -64,13 +69,17 @@ export default function ParticipantItem({
           />
         </TouchableOpacity>
 
-        {/* ── Color indicator ───────────────────────────────────────────── */}
         <View
-          style={{ backgroundColor: item.color }}
-          className="w-2.5 h-2.5 rounded-full mr-3 shrink-0"
+          style={{
+            backgroundColor: item.color,
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            marginRight: 12,
+            flexShrink: 0,
+          }}
         />
 
-        {/* ── Name display / edit input ─────────────────────────────────── */}
         {isEditing ? (
           <TextInput
             value={editName}
@@ -81,28 +90,37 @@ export default function ParticipantItem({
             onSubmitEditing={onConfirmEdit}
             placeholder={isTeam ? "Team name…" : "Player name…"}
             placeholderTextColor="#475569"
-            className={[
-              "flex-1 text-white",
-              isTeam ? "font-black text-lg" : "font-semibold text-base",
-            ].join(" ")}
+            style={{
+              flex: 1,
+              color: "#ffffff",
+              fontWeight: isTeam ? "900" : "600",
+              fontSize: isTeam ? 18 : 16,
+            }}
           />
         ) : (
           <Text
             numberOfLines={1}
-            className={[
-              "flex-1",
-              isTeam
-                ? "text-white font-black text-lg"
-                : "text-slate-300 font-semibold text-base",
-              !item.name ? "italic text-slate-600" : "",
-            ].join(" ")}
+            style={{
+              flex: 1,
+              color: item.name ? (isTeam ? "#ffffff" : "#cbd5e1") : "#475569",
+              fontWeight: isTeam ? "900" : "600",
+              fontSize: isTeam ? 18 : 16,
+              fontStyle: item.name ? "normal" : "italic",
+            }}
           >
             {item.name || (isTeam ? "Unnamed team" : "Unnamed player")}
           </Text>
         )}
 
-        {/* ── Action buttons ────────────────────────────────────────────── */}
-        <View className="flex-row items-center gap-4 ml-2 shrink-0">
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 16,
+            marginLeft: 8,
+            flexShrink: 0,
+          }}
+        >
           {isEditing ? (
             <>
               <TouchableOpacity
