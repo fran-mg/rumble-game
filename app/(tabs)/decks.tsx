@@ -20,8 +20,7 @@ import { injectExtendedSampleDecks } from "../../utils/sampleDeckInjector";
 
 export default function DecksScreen() {
   const theme = useAppTheme();
-  const { decks, selectedDeckIds, loadDecks, toggleDeckSelection, deleteDeck } =
-    useDeckStore();
+  const { decks, loadDecks, deleteDeck } = useDeckStore();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -37,11 +36,6 @@ export default function DecksScreen() {
 
   const initDeckFlow = async () => {
     await seedStarterDecksIfEmpty();
-    await loadDecks();
-  };
-
-  const handleToggleDeck = async (id: number) => {
-    await toggleDeckSelection(id);
     await loadDecks();
   };
 
@@ -227,24 +221,14 @@ export default function DecksScreen() {
           Available Track Packs
         </Text>
         {filteredDecks.map((deck) => {
-          const isSelected = selectedDeckIds.includes(deck.id);
           return (
             <View
               key={deck.id}
-              className={`border p-4 rounded-2xl mb-3 flex-row justify-between items-center ${isSelected ? "bg-blue-600/10 border-blue-500" : theme.surface}`}
+              className={`border p-4 rounded-2xl mb-3 flex-row justify-between items-center ${theme.surface}`}
             >
-              <TouchableOpacity
-                onPress={() => handleToggleDeck(deck.id)}
-                className="flex-1 flex-row items-center gap-4"
-              >
-                <View
-                  className={`p-3 rounded-xl ${isSelected ? "bg-blue-600" : theme.inputBg}`}
-                  style={{ backgroundColor: "pink" }}
-                >
-                  <LucideIcons.Layers
-                    color={isSelected ? "white" : theme.iconColor}
-                    size={20}
-                  />
+              <View className="flex-1 flex-row items-center gap-4">
+                <View className={`p-3 rounded-xl ${theme.inputBg}`}>
+                  <LucideIcons.Layers color={theme.iconColor} size={20} />
                 </View>
                 <View className="flex-1">
                   <Text className={`${theme.textPrimary} font-black text-base`}>
@@ -256,7 +240,7 @@ export default function DecksScreen() {
                     {deck.category} • {deck.card_count} objects
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
 
               <View className="flex-row items-center gap-3 pl-2">
                 <TouchableOpacity
@@ -265,8 +249,9 @@ export default function DecksScreen() {
                 >
                   <LucideIcons.Edit3 color={theme.iconColor} size={16} />
                 </TouchableOpacity>
+                {/* Notice the click logic simplifies drastically to just execute deletion */}
                 <TouchableOpacity
-                  onPress={() => deleteDeck(deck.id).then(loadDecks)}
+                  onPress={() => deleteDeck(deck.id)}
                   className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg"
                 >
                   <LucideIcons.Trash2 color="#EF4444" size={16} />

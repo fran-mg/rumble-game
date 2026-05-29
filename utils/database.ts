@@ -268,13 +268,6 @@ export const dbHelpers = {
     ) as Promise<DeckRow[]>;
   },
 
-  async getSelectedDecks(): Promise<DeckRow[]> {
-    if (!db) return [];
-    return db.getAllAsync(
-      "SELECT d.* FROM decks d INNER JOIN selected_decks s ON d.id = s.deck_id;",
-    ) as Promise<DeckRow[]>;
-  },
-
   async createDeck(
     name: string,
     category: string,
@@ -315,24 +308,6 @@ export const dbHelpers = {
   async deleteDeck(deckId: number): Promise<void> {
     if (!db) return;
     await db.runAsync("DELETE FROM decks WHERE id = ?;", [deckId]);
-  },
-
-  async toggleDeckSelection(deckId: number): Promise<void> {
-    if (!db) return;
-    const existing = await db.getFirstAsync(
-      "SELECT deck_id FROM selected_decks WHERE deck_id = ?;",
-      [deckId],
-    );
-    if (existing) {
-      await db.runAsync("DELETE FROM selected_decks WHERE deck_id = ?;", [
-        deckId,
-      ]);
-    } else {
-      // BUG FIX: original code was missing `else` — always inserted
-      await db.runAsync("INSERT INTO selected_decks (deck_id) VALUES (?);", [
-        deckId,
-      ]);
-    }
   },
 
   async getSelectedDeckIds(): Promise<number[]> {
@@ -405,14 +380,17 @@ export const dbHelpers = {
     if (card) await this._refreshDeckCardCount(card.deck_id);
   },
 
-  async getShuffledCardsFromSelectedDecks(): Promise<CardRow[]> {
-    if (!db) return [];
-    return db.getAllAsync(`
-      SELECT c.* FROM cards c
-      INNER JOIN selected_decks s ON c.deck_id = s.deck_id
-      WHERE c.is_hidden = 0
-      ORDER BY RANDOM();
-    `) as Promise<CardRow[]>;
+  async getShuffledCardsFromDecks(deckIds: number[]): Promise<CardRow[]> {
+    if (!db || deckIds.length === 0) return [];
+
+    // SQLite query dynamically maps the amount of parameters passed
+    const placeholders = deckIds.map(() => "?").join(",");
+    return db.getAllAsync(
+      `SELECT * FROM cards 
+       WHERE deck_id IN (${placeholders}) AND is_hidden = 0
+       ORDER BY RANDOM();`,
+      deckIds,
+    ) as Promise<CardRow[]>;
   },
 
   /** Internal — keeps decks.card_count accurate after any card mutation */

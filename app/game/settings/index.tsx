@@ -24,18 +24,23 @@ import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
 
 export default function SettingsScreen() {
-  // Capture URL param exactly once on mount to prevent Expo Router context from crashing during heavy Zustand async state updates.
   const params = useLocalSearchParams();
   const [selectedMode] = useState(() => (params.mode as any) || "articulate");
 
-  const { decks, selectedDeckIds, loadDecks, toggleDeckSelection } =
-    useDeckStore();
+  // Destructure selectAllDecks
+  const {
+    decks,
+    selectedDeckIds,
+    loadDecks,
+    toggleDeckSelection,
+    selectAllDecks,
+  } = useDeckStore();
+
   const gameStore = useGameStore();
   const { participants, initRoster } = useRosterStore();
 
   const scrollRef = useRef<any>(null);
 
-  // Cache to remember participants when switching between Solo and Team styles
   const cachedTeamsRef = useRef<Participant[] | null>(null);
   const cachedSolosRef = useRef<Participant[] | null>(null);
 
@@ -45,14 +50,19 @@ export default function SettingsScreen() {
   const [timerDuration, setTimerDuration] = useState(60);
   const [isDecksExpanded, setIsDecksExpanded] = useState(false);
 
+  // When page opens, load decks then immediately select all of them
   useEffect(() => {
-    loadDecks();
+    const initializeDecks = async () => {
+      await loadDecks();
+      selectAllDecks();
+    };
+
+    initializeDecks();
+
     initRoster("team");
     cachedTeamsRef.current = null;
     cachedSolosRef.current = null;
   }, []);
-
-  // ── Settings handlers ──────────────────────────────────────────────────────
 
   const handlePlayStyleChange = (style: PlayStyle) => {
     if (style === playStyle) return;
@@ -94,28 +104,15 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleToggleDeck = async (id: number) => {
-    try {
-      await toggleDeckSelection(id);
-      // Decouple UI interaction from the heavy Zustand re-render using a micro-delay.
-      // This gives Expo Router time to breathe and avoids the navigation context tear.
-      setTimeout(() => {
-        loadDecks();
-      }, 10);
-    } catch (e) {
-      console.error("Failed to toggle deck:", e);
-    }
+  const handleToggleDeck = (id: number) => {
+    toggleDeckSelection(id);
   };
-
-  // ── Keyboard Auto-Scroll Handler ───────────────────────────────────────────
 
   const handleScrollRequest = (yPos: number) => {
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: yPos, animated: true });
     }, 300);
   };
-
-  // ── Start game ─────────────────────────────────────────────────────────────
 
   const handleStartGame = async () => {
     await useDeckStore.getState().loadCardsForSelectedDecks();
@@ -151,8 +148,6 @@ export default function SettingsScreen() {
 
     router.replace("/game/play");
   };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   const namedCount = participants.filter((p) => p.name.trim()).length;
   const participantLabel = playStyle === "team" ? "Teams" : "Players";

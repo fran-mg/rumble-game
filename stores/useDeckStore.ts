@@ -1,4 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { dbHelpers } from "../utils/database";
 
 interface Deck {
@@ -24,61 +26,86 @@ interface DeckState {
   selectedDeckIds: number[];
   currentCards: Card[];
 
-  // Actions
   loadDecks: () => Promise<void>;
-  selectDeck: (deckId: number) => Promise<void>;
-  deselectDeck: (deckId: number) => Promise<void>;
-  toggleDeckSelection: (deckId: number) => Promise<void>;
+  selectDeck: (deckId: number) => void;
+  deselectDeck: (deckId: number) => void;
+  toggleDeckSelection: (deckId: number) => void;
+  selectAllDecks: () => void;
   loadCardsForSelectedDecks: () => Promise<void>;
   createDeck: (name: string, category: string) => Promise<void>;
   deleteDeck: (deckId: number) => Promise<void>;
 }
 
-export const useDeckStore = create<DeckState>((set, get) => ({
-  decks: [],
-  selectedDeckIds: [],
-  currentCards: [],
+export const useDeckStore = create<DeckState>()(
+  persist(
+    (set, get) => ({
+      decks: [],
+      selectedDeckIds: [],
+      currentCards: [],
 
-  loadDecks: async () => {
-    const decks = (await dbHelpers.getAllDecks()) as Deck[];
-    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
-    set({
-      decks: decks,
-      selectedDeckIds: selectedDecks.map((d) => d.id),
-    });
-  },
+      loadDecks: async () => {
+        const decks = (await dbHelpers.getAllDecks()) as Deck[];
+        set({ decks });
+      },
 
-  selectDeck: async (deckId: number) => {
-    await dbHelpers.toggleDeckSelection(deckId);
-    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
-    set({ selectedDeckIds: selectedDecks.map((d) => d.id) });
-  },
+      selectDeck: (deckId: number) => {
+        set((state) => ({
+          selectedDeckIds: state.selectedDeckIds.includes(deckId)
+            ? state.selectedDeckIds
+            : [...state.selectedDeckIds, deckId],
+        }));
+      },
 
-  deselectDeck: async (deckId: number) => {
-    await dbHelpers.toggleDeckSelection(deckId);
-    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
-    set({ selectedDeckIds: selectedDecks.map((d) => d.id) });
-  },
+      deselectDeck: (deckId: number) => {
+        set((state) => ({
+          selectedDeckIds: state.selectedDeckIds.filter((id) => id !== deckId),
+        }));
+      },
 
-  toggleDeckSelection: async (deckId: number) => {
-    await dbHelpers.toggleDeckSelection(deckId);
-    const selectedDecks = (await dbHelpers.getSelectedDecks()) as Deck[];
-    set({ selectedDeckIds: selectedDecks.map((d) => d.id) });
-  },
+      toggleDeckSelection: (deckId: number) => {
+        set((state) => ({
+          selectedDeckIds: state.selectedDeckIds.includes(deckId)
+            ? state.selectedDeckIds.filter((id) => id !== deckId)
+            : [...state.selectedDeckIds, deckId],
+        }));
+      },
 
-  loadCardsForSelectedDecks: async () => {
-    const cards =
-      (await dbHelpers.getShuffledCardsFromSelectedDecks()) as Card[];
-    set({ currentCards: cards });
-  },
+      selectAllDecks: () => {
+        set((state) => ({
+          selectedDeckIds: state.decks.map((d) => d.id),
+        }));
+      },
 
-  createDeck: async (name: string, category: string) => {
-    await dbHelpers.createDeck(name, category, "user-created");
-    await get().loadDecks();
-  },
+      loadCardsForSelectedDecks: async () => {
+        const { selectedDeckIds } = get();
+        if (selectedDeckIds.length === 0) {
+          set({ currentCards: [] });
+          return;
+        }
 
-  deleteDeck: async (deckId: number) => {
-    await dbHelpers.deleteDeck(deckId);
-    await get().loadDecks();
-  },
-}));
+        const cards = (await dbHelpers.getShuffledCardsFromDecks(
+          selectedDeckIds,
+        )) as Card[];
+        set({ currentCards: cards });
+      },
+
+      createDeck: async (name: string, category: string) => {
+        await dbHelpers.createDeck(name, category, "user-created");
+        await get().loadDecks();
+      },
+
+      deleteDeck: async (deckId: number) => {
+        await dbHelpers.deleteDeck(deckId);
+        set((state) => ({
+          selectedDeckIds: state.selectedDeckIds.filter((id) => id !== deckId),
+        }));
+        await get().loadDecks();
+      },
+    }),
+    {
+      name: "deck-store",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({ selectedDeckIds: state.selectedDeckIds }),
+    },
+  ),
+);

@@ -33,6 +33,8 @@ export default function RootLayout() {
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          {/* Explicitly defining this stabilizes its navigation context */}
+          <Stack.Screen name="game/settings/index" />
           <Stack.Screen
             name="game/play/index"
             options={{ gestureEnabled: false }}
