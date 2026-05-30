@@ -181,7 +181,7 @@ export const useGameStore = create<GameState>()(
 
         if (item.result === "guessed") {
           item.result = "passed";
-          item.isEdited = true;
+          item.isEdited = !item.isEdited;
           newHistory[index] = item;
           set({
             turnHistory: newHistory,
@@ -190,7 +190,7 @@ export const useGameStore = create<GameState>()(
           });
         } else {
           item.result = "guessed";
-          item.isEdited = true;
+          item.isEdited = !item.isEdited;
           newHistory[index] = item;
           set({
             turnHistory: newHistory,
