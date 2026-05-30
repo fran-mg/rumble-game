@@ -1,3 +1,4 @@
+// app/game/play/index.tsx
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -61,34 +62,50 @@ export default function PlayScreen() {
   const currentEntity = participants[currentTurnIndex];
   const currentCard = cardsInRound[currentCardIndex];
 
+  // 1. Properly handle strict Orientation Locks
   useEffect(() => {
-    if (mode === "headsup") {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-      setGameState("waiting-forehead");
-    } else if (mode === "password") {
-      ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.PORTRAIT_UP,
-      );
-      setGameState("countdown");
-    } else {
-      ScreenOrientation.unlockAsync();
-      setGameState("countdown");
-    }
+    let isMounted = true;
+
+    const applyOrientation = async () => {
+      if (mode === "headsup") {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        if (isMounted) setGameState("waiting-forehead");
+      } else if (mode === "password") {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        if (isMounted) setGameState("countdown");
+      } else {
+        // Taboo/charades allows all orientations
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL);
+        if (isMounted) setGameState("countdown");
+      }
+    };
+
+    applyOrientation();
+
     return () => {
-      ScreenOrientation.unlockAsync();
+      isMounted = false;
+      // Always safely revert back to portrait for the rest of the app
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     };
   }, [mode]);
 
+  // 2. Safely process the countdown without overlapping
   const startCountdownSequence = () => {
     startTurn();
+    setCountdown(3); // Explicitly reset in case of repeated rounds
+    setDisplayTime(timerDuration);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     const countInterval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(countInterval);
           setGameState("playing");
           startContinuousTimer();
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Final "GO!" haptic
           return 0;
         }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); // Tick haptics
         return prev - 1;
       });
     }, 1000);
@@ -100,7 +117,7 @@ export default function PlayScreen() {
 
   useForeheadDetector(gameState === "waiting-forehead", () => {
     setGameState("countdown");
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); // User knows phone is correctly positioned
   });
 
   const triggerTimeUp = () => {
@@ -108,7 +125,8 @@ export default function PlayScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setTimeout(() => {
       endTurn();
-      if (mode === "headsup") ScreenOrientation.unlockAsync();
+      // Lock safely to portrait before routing to summary screen
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       router.replace("/game/round-summary" as any);
     }, 1500);
   };

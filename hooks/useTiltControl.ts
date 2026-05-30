@@ -1,3 +1,4 @@
+// hooks/useTiltControl.ts
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,6 +11,15 @@ export function useTiltControl(
 ) {
   const [tilt, setTilt] = useState<TiltDirection>("center");
   const isCooldown = useRef(false);
+  
+  // Use refs for callbacks so we don't constantly recreate the sensor listener
+  const upRef = useRef(onTiltUp);
+  const downRef = useRef(onTiltDown);
+
+  useEffect(() => {
+    upRef.current = onTiltUp;
+    downRef.current = onTiltDown;
+  }, [onTiltUp, onTiltDown]);
 
   useEffect(() => {
     if (!isActive) {
@@ -29,17 +39,17 @@ export function useTiltControl(
 
       if (z > threshold && tilt !== "down") {
         setTilt("down");
-        triggerAction(onTiltDown);
+        triggerAction(downRef.current);
       } else if (z < -threshold && tilt !== "up") {
         setTilt("up");
-        triggerAction(onTiltUp);
+        triggerAction(upRef.current);
       } else if (z >= -threshold && z <= threshold && tilt !== "center") {
         setTilt("center");
       }
     });
 
     return () => subscription.remove();
-  }, [isActive, tilt, onTiltUp, onTiltDown]);
+  }, [isActive, tilt]);
 
   const triggerAction = (action: () => void) => {
     isCooldown.current = true;
@@ -55,6 +65,12 @@ export function useTiltControl(
 
 // Standalone function to detect when phone is held to forehead
 export function useForeheadDetector(isActive: boolean, onDetected: () => void) {
+  const onDetectedRef = useRef(onDetected);
+
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+  }, [onDetected]);
+
   useEffect(() => {
     if (!isActive) {
       Accelerometer.removeAllListeners();
@@ -62,13 +78,17 @@ export function useForeheadDetector(isActive: boolean, onDetected: () => void) {
     }
 
     Accelerometer.setUpdateInterval(200);
+    let triggered = false; // Prevent multiple triggers in the same cycle
+
     const sub = Accelerometer.addListener(({ x, z }) => {
+      if (triggered) return;
       // Upright in landscape = high X gravity, Z near 0 (flat screen facing out)
       if (Math.abs(x) > 0.7 && Math.abs(z) < 0.4) {
-        onDetected();
+        triggered = true; 
+        onDetectedRef.current();
       }
     });
 
     return () => sub.remove();
-  }, [isActive, onDetected]);
+  }, [isActive]);
 }
