@@ -18,7 +18,6 @@ import {
   useTiltControl,
 } from "../../../hooks/useTiltControl";
 import { useGameStore } from "../../../stores/useGameStore";
-import ActionButtons from "./_ActionButtons";
 import CountdownScreen from "./_CountdownScreen";
 import PlayingCard from "./_PlayingCard";
 import ProgressBar from "./_ProgressBar";
@@ -37,6 +36,8 @@ export default function PlayScreen() {
     );
     return () => sub?.remove();
   }, []);
+
+  const isLandscape = dims.width > dims.height;
 
   const {
     mode,
@@ -63,39 +64,44 @@ export default function PlayScreen() {
   const currentCard = cardsInRound[currentCardIndex];
   const continuousIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Initial Orientation Lock logic
+  // 1. Orientation lock
   useEffect(() => {
     let isMounted = true;
     const applyOrientation = async () => {
       if (mode === "headsup") {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.LANDSCAPE,
+        );
         if (isMounted) setGameState("waiting-forehead");
       } else if (mode === "password") {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.PORTRAIT_UP,
+        );
         if (isMounted) setGameState("countdown");
       } else {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL);
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.ALL,
+        );
         if (isMounted) setGameState("countdown");
       }
     };
-
     applyOrientation();
-
     return () => {
       isMounted = false;
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
     };
   }, [mode]);
 
-  // 2. Countdown phase isolated properly
+  // 2. Countdown phase
   useEffect(() => {
     let countInterval: NodeJS.Timeout;
-    
     if (gameState === "countdown") {
       startTurn();
       setCountdown(3);
       setDisplayTime(timerDuration);
-      progress.value = 1; // Reset progress bar visual
+      progress.value = 1;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       countInterval = setInterval(() => {
@@ -110,17 +116,16 @@ export default function PlayScreen() {
         });
       }, 1000);
     }
-
     return () => {
       if (countInterval) clearInterval(countInterval);
     };
   }, [gameState, timerDuration, startTurn, progress]);
 
-  // 3. Play phase execution
+  // 3. Play phase
   useEffect(() => {
     if (gameState === "playing") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // 'GO!' Buzz
-      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
       progress.value = withTiming(
         0,
         { duration: timerDuration * 1000, easing: Easing.linear },
@@ -128,20 +133,21 @@ export default function PlayScreen() {
           if (finished) runOnJS(triggerTimeUp)();
         },
       );
-      
+
       continuousIntervalRef.current = setInterval(() => {
         setDisplayTime((prev) => {
           if (prev <= 1) {
-            if (continuousIntervalRef.current) clearInterval(continuousIntervalRef.current);
+            if (continuousIntervalRef.current)
+              clearInterval(continuousIntervalRef.current);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
     }
-
     return () => {
-      if (continuousIntervalRef.current) clearInterval(continuousIntervalRef.current);
+      if (continuousIntervalRef.current)
+        clearInterval(continuousIntervalRef.current);
     };
   }, [gameState, timerDuration, progress]);
 
@@ -150,7 +156,9 @@ export default function PlayScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setTimeout(() => {
       endTurn();
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
       router.replace("/game/round-summary" as any);
     }, 1500);
   };
@@ -180,7 +188,8 @@ export default function PlayScreen() {
       setFlashState("default");
       if (currentCardIndex + 1 >= cardsInRound.length) {
         cancelAnimation(progress);
-        if (continuousIntervalRef.current) clearInterval(continuousIntervalRef.current);
+        if (continuousIntervalRef.current)
+          clearInterval(continuousIntervalRef.current);
         triggerTimeUp();
       } else {
         nextCard();
@@ -190,8 +199,8 @@ export default function PlayScreen() {
 
   useTiltControl(
     gameState === "playing" && flashState === "default" && mode === "headsup",
-    () => handleAction("passed"),   // Screen to Sky -> Pass
-    () => handleAction("guessed"),  // Screen to Floor -> Correct
+    () => handleAction("passed"),
+    () => handleAction("guessed"),
   );
 
   if (gameState === "waiting-forehead") return <WaitingForehead />;
@@ -203,20 +212,31 @@ export default function PlayScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-black relative"
-      edges={["left", "right", "bottom"]}
+      style={{ flex: 1, backgroundColor: "#020617" }}
+      edges={["left", "right", "bottom", "top"]}
     >
       <ProgressBar animatedStyle={animatedProgressStyle} />
-      <View className="flex-1 pb-0 pl-0 pr-0 pt-0 m-2 mb-20">
+
+      <View
+        style={{
+          paddingVertical: isLandscape ? 40 : 50,
+          paddingHorizontal: isLandscape ? 20 : 10,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
+      >
         <PlayingCard
           currentCard={currentCard}
           flashState={flashState}
           mode={mode}
           displayTime={displayTime}
+          timerDuration={timerDuration}
+          onAction={handleAction}
+          showButtons={mode !== "headsup"}
         />
-        {mode !== "headsup" && flashState === "default" && (
-          <ActionButtons handleAction={handleAction} />
-        )}
       </View>
     </SafeAreaView>
   );
