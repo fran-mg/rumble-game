@@ -207,7 +207,7 @@ export default function PlayScreen() {
       edges={["left", "right", "bottom"]}
     >
       <ProgressBar animatedStyle={animatedProgressStyle} />
-      <View className="flex-1 pb-0 pl-0 pr-0 pt-0">
+      <View className="flex-1 pb-0 pl-0 pr-0 pt-0 m-2 mb-20">
         <PlayingCard
           currentCard={currentCard}
           flashState={flashState}

@@ -26,13 +26,13 @@ export default function PlayingCard({
 
   return (
     <View
-      className={`flex-1 rounded-[40px] ${colors.bg} ${colors.border} border-4 shadow-2xl justify-center`}
+      className={`flex-1 rounded-[40px] ${colors.bg} p-5 mt-20 mb-10 ${colors.border} border-4 shadow-2xl justify-center`}
     >
       <View
         className={`flex-1 rounded-2xl border-4 ${colors.border} border-dashed items-center justify-center p-6 relative`}
       >
         <View className="absolute top-4 right-6 bg-black/20 px-4 py-1 rounded-full">
-          <Text className="text-white/90 font-black text-2xl">
+          <Text className="text-white/90 font-black text-xl">
             {displayTime}
           </Text>
         </View>
@@ -51,7 +51,7 @@ export default function PlayingCard({
               adjustsFontSizeToFit
               numberOfLines={3}
               minimumFontScale={0.3}
-              className={`font-black text-center text-white ${mode === "password" ? "text-6xl mb-6 border-b-4 border-white/20 pb-4" : "text-[100px]"}`}
+              className={`font-black text-center text-white ${mode === "password" ? "text-6xl mb-6 border-b-4 border-white/20 pb-4" : "text-7xl"}`}
             >
               {currentCard?.word}
             </Text>
