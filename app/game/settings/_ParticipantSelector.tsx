@@ -7,6 +7,7 @@ import {
 } from "react-native-draggable-flatlist";
 import { PlayStyle } from "../../../stores/useGameStore";
 import { useRosterStore } from "../../../stores/useRosterStore";
+import { ModeAccent } from "../../../utils/_modeTheme";
 import { Participant } from "../../../utils/database";
 import ParticipantItem from "./_ParticipantItem";
 
@@ -14,12 +15,7 @@ interface ParticipantSelectorProps {
   playStyle: PlayStyle;
   onPlayStyleChange: (style: PlayStyle) => void;
   onScrollRequest: (y: number) => void;
-  accent: {
-    color: string;
-    colorMuted: string;
-    colorBg: string;
-    colorBorder: string;
-  };
+  accent: ModeAccent;
 }
 
 export default function ParticipantSelector({

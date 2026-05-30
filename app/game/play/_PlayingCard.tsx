@@ -1,3 +1,4 @@
+// app/game/play/_PlayingCard.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
@@ -8,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getModeTheme, resolveCardTheme } from "../../../utils/_modeTheme";
 import { CardFlashState } from "./index";
 
 interface PlayingCardProps {
@@ -19,78 +21,6 @@ interface PlayingCardProps {
   onAction?: (action: "guessed" | "passed") => void;
   showButtons?: boolean;
 }
-
-// ─── Mode Themes ──────────────────────────────────────────────────────────────
-
-const MODE_THEMES: Record<
-  string,
-  {
-    gradientTop: string;
-    gradientBottom: string;
-    shadowColor: string;
-    accentColor: string;
-    labelColor: string;
-    label: string;
-    innerBorder: string;
-  }
-> = {
-  headsup: {
-    gradientTop: "#4f46e5",
-    gradientBottom: "#1e1b4b",
-    shadowColor: "#4f46e5",
-    accentColor: "#a5b4fc",
-    labelColor: "#c7d2fe",
-    label: "HEADS UP",
-    innerBorder: "rgba(165,180,252,0.2)",
-  },
-  taboo: {
-    gradientTop: "#0e7490",
-    gradientBottom: "#042f3e",
-    shadowColor: "#0891b2",
-    accentColor: "#67e8f9",
-    labelColor: "#a5f3fc",
-    label: "TABOO",
-    innerBorder: "rgba(103,232,249,0.2)",
-  },
-  forbidden: {
-    gradientTop: "#9f1239",
-    gradientBottom: "#4c0519",
-    shadowColor: "#e11d48",
-    accentColor: "#fda4af",
-    labelColor: "#fecdd3",
-    label: "FORBIDDEN",
-    innerBorder: "rgba(253,164,175,0.2)",
-  },
-  articulate: {
-    gradientTop: "#1d4ed8",
-    gradientBottom: "#1e3a5f",
-    shadowColor: "#2563eb",
-    accentColor: "#93c5fd",
-    labelColor: "#bfdbfe",
-    label: "ARTICULATE",
-    innerBorder: "rgba(147,197,253,0.2)",
-  },
-};
-
-const PASS_THEME = {
-  gradientTop: "#c2410c",
-  gradientBottom: "#431407",
-  shadowColor: "#f97316",
-  accentColor: "#fdba74",
-  labelColor: "#fed7aa",
-  label: "PASS",
-  innerBorder: "rgba(253,186,116,0.25)",
-};
-
-const CORRECT_THEME = {
-  gradientTop: "#166534",
-  gradientBottom: "#052e16",
-  shadowColor: "#22c55e",
-  accentColor: "#86efac",
-  labelColor: "#bbf7d0",
-  label: "CORRECT",
-  innerBorder: "rgba(134,239,172,0.25)",
-};
 
 // ─── Timer Pill ───────────────────────────────────────────────────────────────
 
@@ -155,7 +85,7 @@ function TimerPill({
   );
 }
 
-// ─── Forbidden Words ─────────────────────────────────────────────────────────
+// ─── Forbidden Words ──────────────────────────────────────────────────────────
 
 function ForbiddenWordsList({
   words,
@@ -165,14 +95,14 @@ function ForbiddenWordsList({
   accentColor: string;
 }) {
   return (
-    <View style={styles.tabooContainer}>
-      <View style={styles.tabooHeader}>
+    <View style={styles.forbiddenContainer}>
+      <View style={styles.forbiddenHeader}>
         <LucideIcons.Ban
           size={10}
           color="rgba(255,255,255,0.4)"
           strokeWidth={2.5}
         />
-        <Text style={styles.tabooHeaderText}>DO NOT SAY</Text>
+        <Text style={styles.forbiddenHeaderText}>DO NOT SAY</Text>
         <LucideIcons.Ban
           size={10}
           color="rgba(255,255,255,0.4)"
@@ -180,11 +110,14 @@ function ForbiddenWordsList({
         />
       </View>
       {words.slice(0, 5).map((w, i) => (
-        <View key={i} style={styles.tabooWordRow}>
+        <View key={i} style={styles.forbiddenWordRow}>
           <View
-            style={[styles.tabooWordBullet, { backgroundColor: accentColor }]}
+            style={[
+              styles.forbiddenWordBullet,
+              { backgroundColor: accentColor },
+            ]}
           />
-          <Text style={styles.tabooWordText} numberOfLines={1}>
+          <Text style={styles.forbiddenWordText} numberOfLines={1}>
             {w.toUpperCase()}
           </Text>
         </View>
@@ -193,7 +126,7 @@ function ForbiddenWordsList({
   );
 }
 
-// ─── Action Buttons (inside card) ────────────────────────────────────────────
+// ─── Action Buttons ───────────────────────────────────────────────────────────
 
 function CardActionButtons({
   onAction,
@@ -244,7 +177,7 @@ export default function PlayingCard({
   const prevFlashRef = useRef<CardFlashState>("default");
   const prevWordRef = useRef<string>("");
 
-  // Scale on flash
+  // Scale press on flash state
   useEffect(() => {
     if (flashState !== prevFlashRef.current) {
       Animated.spring(scaleAnim, {
@@ -257,7 +190,7 @@ export default function PlayingCard({
     }
   }, [flashState]);
 
-  // Word change slide-up
+  // Word change slide-up animation
   useEffect(() => {
     if (currentCard?.word && currentCard.word !== prevWordRef.current) {
       slideAnim.setValue(22);
@@ -278,17 +211,13 @@ export default function PlayingCard({
     }
   }, [currentCard?.word]);
 
-  // Theme resolution
-  let theme = MODE_THEMES[mode] ?? MODE_THEMES.articulate;
-  if (flashState === "pass") theme = PASS_THEME as typeof theme;
-  if (flashState === "done") theme = CORRECT_THEME as typeof theme;
+  // ── Theme resolution via shared util ────────────────────────────────────────
+  const cardTheme = resolveCardTheme(mode, flashState);
+  const { card: baseCardTheme, meta } = getModeTheme(mode);
 
-  // Current mode's base theme — used for labels/icons regardless of flash state
-  const baseTheme = MODE_THEMES[mode] ?? MODE_THEMES.articulate;
-
-  // Forbidden words — forbidden mode only
+  // Forbidden words — only rendered when meta.showsForbiddenWords is true
   let forbiddenWords: string[] = [];
-  if (mode === "forbidden" && currentCard?.taboo_words) {
+  if (meta.showsForbiddenWords && currentCard?.taboo_words) {
     try {
       forbiddenWords = JSON.parse(currentCard.taboo_words);
     } catch {
@@ -298,15 +227,7 @@ export default function PlayingCard({
   const showForbiddenWords =
     forbiddenWords.length > 0 && flashState === "default";
 
-  // Mode icon
-  const ModeIcon =
-    mode === "headsup"
-      ? LucideIcons.Smartphone
-      : mode === "taboo"
-        ? LucideIcons.Drama
-        : mode === "forbidden"
-          ? LucideIcons.CircleSlash
-          : LucideIcons.MessageSquare;
+  const ModeIcon = meta.Icon;
 
   return (
     <Animated.View
@@ -314,18 +235,21 @@ export default function PlayingCard({
         styles.cardWrapper,
         {
           transform: [{ scale: scaleAnim }],
-          shadowColor: theme.shadowColor,
+          shadowColor: cardTheme.shadowColor,
         },
       ]}
     >
       {/* Depth shadow layer */}
       <View
-        style={[styles.cardShadowBase, { backgroundColor: theme.shadowColor }]}
+        style={[
+          styles.cardShadowBase,
+          { backgroundColor: cardTheme.shadowColor },
+        ]}
       />
 
       {/* Card body */}
       <LinearGradient
-        colors={[theme.gradientTop, theme.gradientBottom] as any}
+        colors={[cardTheme.gradientTop, cardTheme.gradientBottom] as any}
         start={{ x: 0.15, y: 0 }}
         end={{ x: 0.85, y: 1 }}
         style={styles.cardBody}
@@ -339,9 +263,9 @@ export default function PlayingCard({
           pointerEvents="none"
         />
 
-        {/* Card face — header corners live inside here now */}
-        <View style={[styles.cardFace, { borderColor: theme.innerBorder }]}>
-          {/* ── Top-left mode label ── */}
+        {/* Card face */}
+        <View style={[styles.cardFace, { borderColor: cardTheme.innerBorder }]}>
+          {/* Top-left mode label — always uses base mode theme, not flash */}
           {false && (
             <View
               style={[
@@ -351,25 +275,27 @@ export default function PlayingCard({
             >
               <ModeIcon
                 size={11}
-                color={baseTheme.labelColor}
+                color={baseCardTheme.labelColor}
                 strokeWidth={2.5}
               />
-              <Text style={[styles.modeLabel, { color: baseTheme.labelColor }]}>
-                {baseTheme.label}
+              <Text
+                style={[styles.modeLabel, { color: baseCardTheme.labelColor }]}
+              >
+                {baseCardTheme.label}
               </Text>
             </View>
           )}
 
-          {/* ── Top-right timer ── */}
+          {/* Top-right timer */}
           <View style={styles.cornerTimerRight}>
             <TimerPill
               displayTime={displayTime}
               timerDuration={timerDuration}
-              labelColor={baseTheme.labelColor}
+              labelColor={baseCardTheme.labelColor}
             />
           </View>
 
-          {/* ── Card content ── */}
+          {/* Card content */}
           {flashState === "pass" ? (
             <View style={styles.flashStateContainer}>
               <LucideIcons.ArrowRight
@@ -406,7 +332,7 @@ export default function PlayingCard({
                 minimumFontScale={0.25}
                 style={[
                   styles.mainWord,
-                  showForbiddenWords && styles.mainWordWithTaboo,
+                  showForbiddenWords && styles.mainWordWithForbidden,
                 ]}
               >
                 {currentCard?.word ?? ""}
@@ -416,7 +342,7 @@ export default function PlayingCard({
                 <View
                   style={[
                     styles.wordDivider,
-                    { backgroundColor: theme.innerBorder },
+                    { backgroundColor: cardTheme.innerBorder },
                   ]}
                 />
               )}
@@ -424,18 +350,18 @@ export default function PlayingCard({
               {showForbiddenWords && (
                 <ForbiddenWordsList
                   words={forbiddenWords}
-                  accentColor={theme.accentColor}
+                  accentColor={cardTheme.accentColor}
                 />
               )}
             </Animated.View>
           )}
         </View>
 
-        {/* Buttons — part of the card, rendered below the face */}
+        {/* Buttons */}
         {showButtons && onAction && flashState === "default" && (
           <CardActionButtons
             onAction={onAction}
-            innerBorder={theme.innerBorder}
+            innerBorder={cardTheme.innerBorder}
           />
         )}
       </LinearGradient>
@@ -453,7 +379,6 @@ const styles = StyleSheet.create({
     shadowRadius: 32,
     elevation: 24,
   },
-
   cardShadowBase: {
     position: "absolute",
     bottom: -8,
@@ -463,7 +388,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     opacity: 0.3,
   },
-
   cardBody: {
     flex: 1,
     borderRadius: 24,
@@ -472,7 +396,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
-
   cardShine: {
     position: "absolute",
     top: 0,
@@ -482,8 +405,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
-
-  // ── Card face (fills remaining space above buttons) ───────────────────────
   cardFace: {
     flex: 1,
     borderRadius: 16,
@@ -491,12 +412,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
-    // Extra top padding so content clears the overlaid corner labels
     paddingTop: 52,
     backgroundColor: "rgba(0,0,0,0.18)",
   },
-
-  // ── Corner overlays inside the card face ─────────────────────────────────
   cornerLabelLeft: {
     position: "absolute",
     top: 12,
@@ -510,19 +428,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-
   cornerTimerRight: {
     position: "absolute",
     top: 10,
     right: 12,
   },
-
   modeLabel: {
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 1.5,
   },
-
   timerPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -533,20 +448,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-
   timerText: {
     fontSize: 15,
     fontWeight: "800",
     letterSpacing: 0.5,
   },
-
-  // ── Flash states ─────────────────────────────────────────────────────────
   flashStateContainer: {
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
   },
-
   flashStateText: {
     color: "#ffffff",
     fontSize: 54,
@@ -554,21 +465,17 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textAlign: "center",
   },
-
   flashStateSubText: {
     color: "rgba(255,255,255,0.55)",
     fontSize: 15,
     fontWeight: "600",
     letterSpacing: 1,
   },
-
-  // ── Word area ─────────────────────────────────────────────────────────────
   wordContainer: {
     width: "100%",
     alignItems: "center",
     gap: 14,
   },
-
   mainWord: {
     color: "#ffffff",
     fontSize: 70,
@@ -580,40 +487,33 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
-
-  mainWordWithTaboo: {
+  mainWordWithForbidden: {
     fontSize: 50,
     lineHeight: 56,
   },
-
   wordDivider: {
     width: "55%",
     height: 1.5,
     borderRadius: 1,
   },
-
-  // ── Forbidden words ───────────────────────────────────────────────────────
-  tabooContainer: {
+  forbiddenContainer: {
     width: "100%",
     alignItems: "center",
     gap: 5,
   },
-
-  tabooHeader: {
+  forbiddenHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginBottom: 4,
   },
-
-  tabooHeaderText: {
+  forbiddenHeaderText: {
     color: "rgba(255,255,255,0.4)",
     fontSize: 9,
     fontWeight: "800",
     letterSpacing: 2.5,
   },
-
-  tabooWordRow: {
+  forbiddenWordRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -624,15 +524,13 @@ const styles = StyleSheet.create({
     width: "82%",
     justifyContent: "center",
   },
-
-  tabooWordBullet: {
+  forbiddenWordBullet: {
     width: 4,
     height: 4,
     borderRadius: 2,
     opacity: 0.65,
   },
-
-  tabooWordText: {
+  forbiddenWordText: {
     color: "rgba(255,255,255,0.75)",
     fontSize: 14,
     fontWeight: "700",
@@ -640,8 +538,6 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
     textDecorationColor: "rgba(255,255,255,0.35)",
   },
-
-  // ── Buttons ───────────────────────────────────────────────────────────────
   buttonRow: {
     flexDirection: "row",
     marginTop: 14,
@@ -650,7 +546,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     height: 72,
   },
-
   actionBtn: {
     flex: 1,
     alignItems: "center",
@@ -658,27 +553,22 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: "rgba(0,0,0,0.22)",
   },
-
   passBtn: {
     borderBottomLeftRadius: 16,
   },
-
   gotItBtn: {
     borderBottomRightRadius: 16,
   },
-
   btnDivider: {
     width: 1.5,
     marginVertical: 12,
   },
-
   passBtnText: {
     color: "#fed7aa",
     fontSize: 15,
     fontWeight: "800",
     letterSpacing: 0.5,
   },
-
   gotItBtnText: {
     color: "#bbf7d0",
     fontSize: 15,

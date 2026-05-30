@@ -2,16 +2,12 @@ import Slider from "@react-native-community/slider";
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { ModeAccent } from "../../../utils/_modeTheme";
 
 interface TimerSelectorProps {
   timerDuration: number;
   setTimerDuration: (val: number) => void;
-  accent: {
-    color: string;
-    colorMuted: string;
-    colorBg: string;
-    colorBorder: string;
-  };
+  accent: ModeAccent;
 }
 
 export default function TimerSelector({

@@ -18,6 +18,7 @@ import {
   useTiltControl,
 } from "../../../hooks/useTiltControl";
 import { useGameStore } from "../../../stores/useGameStore";
+import { getModeTheme } from "../../../utils/_modeTheme";
 import CountdownScreen from "./_CountdownScreen";
 import PlayingCard from "./_PlayingCard";
 import ProgressBar from "./_ProgressBar";
@@ -52,6 +53,9 @@ export default function PlayScreen() {
     nextCard,
   } = useGameStore();
 
+  // Derive everything from the shared theme — no hardcoded mode checks
+  const { meta } = getModeTheme(mode);
+
   const [gameState, setGameState] = useState<
     "waiting-forehead" | "countdown" | "playing" | "timeup"
   >("countdown");
@@ -64,16 +68,16 @@ export default function PlayScreen() {
   const currentCard = cardsInRound[currentCardIndex];
   const continuousIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Orientation lock
+  // 1. Orientation lock — driven by meta.orientation
   useEffect(() => {
     let isMounted = true;
     const applyOrientation = async () => {
-      if (mode === "headsup") {
+      if (meta.orientation === "landscape") {
         await ScreenOrientation.lockAsync(
           ScreenOrientation.OrientationLock.LANDSCAPE,
         );
         if (isMounted) setGameState("waiting-forehead");
-      } else if (mode === "forbidden") {
+      } else if (meta.orientation === "portrait") {
         await ScreenOrientation.lockAsync(
           ScreenOrientation.OrientationLock.PORTRAIT_UP,
         );
@@ -92,7 +96,7 @@ export default function PlayScreen() {
         ScreenOrientation.OrientationLock.PORTRAIT_UP,
       );
     };
-  }, [mode]);
+  }, [meta.orientation]);
 
   // 2. Countdown phase
   useEffect(() => {
@@ -197,8 +201,9 @@ export default function PlayScreen() {
     }, 200);
   };
 
+  // Tilt — driven by meta.usesTilt
   useTiltControl(
-    gameState === "playing" && flashState === "default" && mode === "headsup",
+    gameState === "playing" && flashState === "default" && meta.usesTilt,
     () => handleAction("passed"),
     () => handleAction("guessed"),
   );
@@ -235,7 +240,8 @@ export default function PlayScreen() {
           displayTime={displayTime}
           timerDuration={timerDuration}
           onAction={handleAction}
-          showButtons={mode !== "headsup"}
+          // Both driven by meta — no hardcoded mode string checks here
+          showButtons={meta.showsButtons}
         />
       </View>
     </SafeAreaView>

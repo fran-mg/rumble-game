@@ -20,9 +20,9 @@ import {
   useGameStore,
 } from "../../../stores/useGameStore";
 import { useRosterStore } from "../../../stores/useRosterStore";
+import { getModeAccent, getModeMeta } from "../../../utils/_modeTheme";
 import { Participant } from "../../../utils/database";
 import DeckSelector from "./_DeckSelector";
-import { DEFAULT_ACCENT, MODE_ACCENT } from "./_modeTheme";
 import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
@@ -56,8 +56,8 @@ export default function SettingsScreen() {
   const params = useLocalSearchParams();
   const [selectedMode] = useState(() => (params.mode as any) || "articulate");
 
-  const accent = MODE_ACCENT[selectedMode] ?? DEFAULT_ACCENT;
-  const meta = MODE_META[selectedMode] ?? MODE_META.articulate;
+  const accent = getModeAccent(selectedMode);
+  const meta = getModeMeta(selectedMode);
   const ModeIcon = meta.Icon;
 
   const {

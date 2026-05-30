@@ -8,18 +8,14 @@ import {
   View,
 } from "react-native";
 import { ScoringStyle } from "../../../stores/useGameStore";
+import { ModeAccent } from "../../../utils/_modeTheme";
 
 interface ScoringStyleSelectorProps {
   scoringStyle: ScoringStyle;
   onScoringStyleChange: (style: ScoringStyle) => void;
   targetLimit: number | "Infinity";
   onTargetLimitChange: (limit: number | "Infinity") => void;
-  accent: {
-    color: string;
-    colorMuted: string;
-    colorBg: string;
-    colorBorder: string;
-  };
+  accent: ModeAccent;
 }
 
 export default function ScoringStyleSelector({
