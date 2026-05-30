@@ -2,7 +2,7 @@
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Dimensions, View } from "react-native";
 import {
   cancelAnimation,
@@ -61,11 +61,11 @@ export default function PlayScreen() {
   const progress = useSharedValue(1);
   const currentEntity = participants[currentTurnIndex];
   const currentCard = cardsInRound[currentCardIndex];
+  const continuousIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Properly handle strict Orientation Locks
+  // 1. Initial Orientation Lock logic
   useEffect(() => {
     let isMounted = true;
-
     const applyOrientation = async () => {
       if (mode === "headsup") {
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -74,7 +74,6 @@ export default function PlayScreen() {
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
         if (isMounted) setGameState("countdown");
       } else {
-        // Taboo/charades allows all orientations
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL);
         if (isMounted) setGameState("countdown");
       }
@@ -84,71 +83,82 @@ export default function PlayScreen() {
 
     return () => {
       isMounted = false;
-      // Always safely revert back to portrait for the rest of the app
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     };
   }, [mode]);
 
-  // 2. Safely process the countdown without overlapping
-  const startCountdownSequence = () => {
-    startTurn();
-    setCountdown(3); // Explicitly reset in case of repeated rounds
-    setDisplayTime(timerDuration);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    const countInterval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countInterval);
-          setGameState("playing");
-          startContinuousTimer();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Final "GO!" haptic
-          return 0;
-        }
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); // Tick haptics
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
+  // 2. Countdown phase isolated properly
   useEffect(() => {
-    if (gameState === "countdown") startCountdownSequence();
-  }, [gameState]);
+    let countInterval: NodeJS.Timeout;
+    
+    if (gameState === "countdown") {
+      startTurn();
+      setCountdown(3);
+      setDisplayTime(timerDuration);
+      progress.value = 1; // Reset progress bar visual
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-  useForeheadDetector(gameState === "waiting-forehead", () => {
-    setGameState("countdown");
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); // User knows phone is correctly positioned
-  });
+      countInterval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countInterval);
+            setGameState("playing");
+            return 0;
+          }
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (countInterval) clearInterval(countInterval);
+    };
+  }, [gameState, timerDuration, startTurn, progress]);
+
+  // 3. Play phase execution
+  useEffect(() => {
+    if (gameState === "playing") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // 'GO!' Buzz
+      
+      progress.value = withTiming(
+        0,
+        { duration: timerDuration * 1000, easing: Easing.linear },
+        (finished) => {
+          if (finished) runOnJS(triggerTimeUp)();
+        },
+      );
+      
+      continuousIntervalRef.current = setInterval(() => {
+        setDisplayTime((prev) => {
+          if (prev <= 1) {
+            if (continuousIntervalRef.current) clearInterval(continuousIntervalRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (continuousIntervalRef.current) clearInterval(continuousIntervalRef.current);
+    };
+  }, [gameState, timerDuration, progress]);
 
   const triggerTimeUp = () => {
     setGameState("timeup");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     setTimeout(() => {
       endTurn();
-      // Lock safely to portrait before routing to summary screen
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       router.replace("/game/round-summary" as any);
     }, 1500);
   };
 
-  const startContinuousTimer = () => {
-    progress.value = withTiming(
-      0,
-      { duration: timerDuration * 1000, easing: Easing.linear },
-      (finished) => {
-        if (finished) runOnJS(triggerTimeUp)();
-      },
-    );
-    const interval = setInterval(() => {
-      setDisplayTime((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
+  useForeheadDetector(gameState === "waiting-forehead", () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setGameState("countdown");
+  });
 
   const animatedProgressStyle = useAnimatedStyle(() => ({
     width: progress.value * dims.width,
@@ -170,6 +180,7 @@ export default function PlayScreen() {
       setFlashState("default");
       if (currentCardIndex + 1 >= cardsInRound.length) {
         cancelAnimation(progress);
+        if (continuousIntervalRef.current) clearInterval(continuousIntervalRef.current);
         triggerTimeUp();
       } else {
         nextCard();
@@ -179,8 +190,8 @@ export default function PlayScreen() {
 
   useTiltControl(
     gameState === "playing" && flashState === "default" && mode === "headsup",
-    () => handleAction("passed"),
-    () => handleAction("guessed"),
+    () => handleAction("passed"),   // Screen to Sky -> Pass
+    () => handleAction("guessed"),  // Screen to Floor -> Correct
   );
 
   if (gameState === "waiting-forehead") return <WaitingForehead />;

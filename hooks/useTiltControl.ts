@@ -11,7 +11,7 @@ export function useTiltControl(
 ) {
   const [tilt, setTilt] = useState<TiltDirection>("center");
   const isCooldown = useRef(false);
-  
+
   // Use refs for callbacks so we don't constantly recreate the sensor listener
   const upRef = useRef(onTiltUp);
   const downRef = useRef(onTiltDown);
@@ -32,18 +32,21 @@ export function useTiltControl(
     const subscription = Accelerometer.addListener(({ z }) => {
       if (isCooldown.current) return;
 
-      // In Landscape:
-      // z > 0.45 means phone screen is tilting towards the floor
-      // z < -0.45 means phone screen is tilting towards the ceiling
-      const threshold = 0.45;
+      // Higher threshold means less sensitive - user must deliberately tilt
+      const threshold = 0.65;
 
-      if (z > threshold && tilt !== "down") {
+      // Z < -0.65: Phone screen is facing the floor (Tilt Down -> Correct)
+      if (z < -threshold && tilt !== "down") {
         setTilt("down");
         triggerAction(downRef.current);
-      } else if (z < -threshold && tilt !== "up") {
+      } 
+      // Z > 0.65: Phone screen is facing the sky (Tilt Up -> Pass)
+      else if (z > threshold && tilt !== "up") {
         setTilt("up");
         triggerAction(upRef.current);
-      } else if (z >= -threshold && z <= threshold && tilt !== "center") {
+      } 
+      // Z between -0.4 and 0.4: Phone is back upright on the forehead
+      else if (z >= -0.4 && z <= 0.4 && tilt !== "center") {
         setTilt("center");
       }
     });
@@ -54,16 +57,14 @@ export function useTiltControl(
   const triggerAction = (action: () => void) => {
     isCooldown.current = true;
     action();
-    // Shorter cooldown for fast frantic party gameplay
     setTimeout(() => {
       isCooldown.current = false;
-    }, 400);
+    }, 400); // 400ms cooldown before next tilt is allowed
   };
 
   return tilt;
 }
 
-// Standalone function to detect when phone is held to forehead
 export function useForeheadDetector(isActive: boolean, onDetected: () => void) {
   const onDetectedRef = useRef(onDetected);
 
@@ -77,15 +78,25 @@ export function useForeheadDetector(isActive: boolean, onDetected: () => void) {
       return;
     }
 
-    Accelerometer.setUpdateInterval(200);
-    let triggered = false; // Prevent multiple triggers in the same cycle
+    Accelerometer.setUpdateInterval(100);
+    let triggered = false;
+    let consecutiveFrames = 0;
+    const requiredFrames = 6; // Requires phone to be held steady for 600ms (6 * 100ms)
 
     const sub = Accelerometer.addListener(({ x, z }) => {
       if (triggered) return;
-      // Upright in landscape = high X gravity, Z near 0 (flat screen facing out)
-      if (Math.abs(x) > 0.7 && Math.abs(z) < 0.4) {
-        triggered = true; 
-        onDetectedRef.current();
+      
+      // Landscape upright check: 
+      // Math.abs(x) > 0.7 ensures it's horizontally level (left or right edge down)
+      // Math.abs(z) < 0.3 ensures the screen is roughly perfectly vertical
+      if (Math.abs(x) > 0.7 && Math.abs(z) < 0.3) {
+        consecutiveFrames++;
+        if (consecutiveFrames >= requiredFrames) {
+          triggered = true;
+          onDetectedRef.current();
+        }
+      } else {
+        consecutiveFrames = 0; // Reset count if phone is wobbling or being swung
       }
     });
 
