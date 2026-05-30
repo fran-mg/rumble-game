@@ -9,7 +9,7 @@ export default function MatchSetupScreen() {
   const router = useRouter();
   const theme = useAppTheme();
 
-  const handleModeSelection = (mode: "headsup" | "taboo" | "password") => {
+  const handleModeSelection = (mode: "headsup" | "taboo" | "forbidden") => {
     router.push({
       pathname: "/game/settings",
       params: { mode },
@@ -99,25 +99,25 @@ export default function MatchSetupScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Mode 3: Password */}
+        {/* Mode 3: Forbidden */}
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => handleModeSelection("password")}
+          onPress={() => handleModeSelection("forbidden")}
           className="bg-slate-900/70 border-l-4 border-l-rose-500 border border-y-slate-800 border-r-slate-800 rounded-2xl p-5 flex-row relative shadow-xl overflow-hidden"
         >
           <View className="absolute -right-8 -bottom-8 w-24 h-24 bg-rose-500/10 rounded-full blur-xl" />
 
           <View className="bg-rose-500/10 w-12 h-12 rounded-xl items-center justify-center mr-4 mt-0.5">
-            <LucideIcons.Key color="#f43f5e" size={24} />
+            <LucideIcons.CircleSlash color="#f43f5e" size={24} />
           </View>
 
           <View className="flex-1 pr-12">
             <Text className="text-white text-xl font-black tracking-tight mb-1">
-              Password
+              Forbidden
             </Text>
             <Text className="text-slate-400 text-xs font-medium leading-relaxed">
-              Give one-word clues. Forbidden words are restricted and displayed
-              clearly below the main target keyword.
+              Forbidden words are restricted and displayed clearly below the
+              main target keyword.
             </Text>
           </View>
 

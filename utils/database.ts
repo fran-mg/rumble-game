@@ -182,10 +182,10 @@ const seedInitialData = async (): Promise<void> => {
     if (count === 0) {
       await db.runAsync(`
         INSERT INTO game_modes (name, display_name, description, icon, is_enabled) VALUES
-          ('articulate', 'Articulate', 'Describe the word without saying it.',         'MessageSquare', 1),
-          ('taboo',      'Taboo',      'Describe without using forbidden words.',       'Ban',           1),
-          ('charades',   'Charades',   'Act it out — no speaking allowed.',             'Smile',         1),
-          ('password',   'Password',   'One-word clues to uncover the secret word.',   'Key',           1),
+          ('headsup', 'Heads Up', 'Guess the word by what's described to you.',         'Smartphone', 1),
+          ('taboo',      'Taboo',      'Describe the word without saying it.',       'Drama',           1),
+          ('charades',   'Charades',   'Act it out — no speaking allowed.',             'Drama',         1),
+          ('forbidden',   'Forbidden',   'Describe without using forbidden words.',   'CircleSlash',           1),
           ('boardgame',  'Board Game', 'Race along the track — category tiles decide.','Trophy',        1);
       `);
     }

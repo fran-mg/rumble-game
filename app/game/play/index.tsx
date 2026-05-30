@@ -73,7 +73,7 @@ export default function PlayScreen() {
           ScreenOrientation.OrientationLock.LANDSCAPE,
         );
         if (isMounted) setGameState("waiting-forehead");
-      } else if (mode === "password") {
+      } else if (mode === "forbidden") {
         await ScreenOrientation.lockAsync(
           ScreenOrientation.OrientationLock.PORTRAIT_UP,
         );

@@ -1,4 +1,3 @@
-// app/game/play/_PlayingCard.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
@@ -53,13 +52,13 @@ const MODE_THEMES: Record<
     label: "TABOO",
     innerBorder: "rgba(103,232,249,0.2)",
   },
-  password: {
+  forbidden: {
     gradientTop: "#9f1239",
     gradientBottom: "#4c0519",
     shadowColor: "#e11d48",
     accentColor: "#fda4af",
     labelColor: "#fecdd3",
-    label: "PASSWORD",
+    label: "FORBIDDEN",
     innerBorder: "rgba(253,164,175,0.2)",
   },
   articulate: {
@@ -156,7 +155,7 @@ function TimerPill({
   );
 }
 
-// ─── Password Forbidden Words ─────────────────────────────────────────────────
+// ─── Forbidden Words ─────────────────────────────────────────────────────────
 
 function ForbiddenWordsList({
   words,
@@ -287,9 +286,9 @@ export default function PlayingCard({
   // Current mode's base theme — used for labels/icons regardless of flash state
   const baseTheme = MODE_THEMES[mode] ?? MODE_THEMES.articulate;
 
-  // Forbidden words — password mode only
+  // Forbidden words — forbidden mode only
   let forbiddenWords: string[] = [];
-  if (mode === "password" && currentCard?.taboo_words) {
+  if (mode === "forbidden" && currentCard?.taboo_words) {
     try {
       forbiddenWords = JSON.parse(currentCard.taboo_words);
     } catch {
@@ -305,8 +304,8 @@ export default function PlayingCard({
       ? LucideIcons.Smartphone
       : mode === "taboo"
         ? LucideIcons.Drama
-        : mode === "password"
-          ? LucideIcons.Key
+        : mode === "forbidden"
+          ? LucideIcons.CircleSlash
           : LucideIcons.MessageSquare;
 
   return (
