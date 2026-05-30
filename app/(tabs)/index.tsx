@@ -74,12 +74,12 @@ export default function MatchSetupScreen() {
         <TouchableOpacity
           activeOpacity={0.3}
           onPress={() => handleModeSelection("taboo")}
-          className="bg-slate-900/70 border-l-4 border-l-rose-500 border border-y-slate-800 border-r-slate-800 rounded-2xl p-5 flex-row relative shadow-xl overflow-hidden"
+          className="bg-slate-900/70 border-l-4 border-l-cyan-500 border border-y-slate-800 border-r-slate-800 rounded-2xl p-5 flex-row relative shadow-xl overflow-hidden"
         >
-          <View className="absolute -right-8 -bottom-8 w-24 h-24 bg-rose-500/10 rounded-full blur-xl" />
+          <View className="absolute -right-8 -bottom-8 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl" />
 
-          <View className="bg-rose-500/10 w-12 h-12 rounded-xl items-center justify-center mr-4 mt-0.5">
-            <LucideIcons.Ban color="#f43f5e" size={24} />
+          <View className="bg-cyan-500/10 w-12 h-12 rounded-xl items-center justify-center mr-4 mt-0.5">
+            <LucideIcons.Drama color="#06b6d4" size={24} />
           </View>
 
           <View className="flex-1 pr-12">
@@ -92,8 +92,8 @@ export default function MatchSetupScreen() {
             </Text>
           </View>
 
-          <View className="absolute top-4 right-4 bg-rose-500/10 px-2 py-0.5 rounded-md">
-            <Text className="text-rose-400 font-bold text-3xs uppercase tracking-wider">
+          <View className="absolute top-4 right-4 bg-cyan-500/10 px-2 py-0.5 rounded-md">
+            <Text className="text-cyan-400 font-bold text-3xs uppercase tracking-wider">
               EITHER
             </Text>
           </View>
@@ -103,12 +103,12 @@ export default function MatchSetupScreen() {
         <TouchableOpacity
           activeOpacity={0.3}
           onPress={() => handleModeSelection("password")}
-          className="bg-slate-900/70 border-l-4 border-l-emerald-500 border border-y-slate-800 border-r-slate-800 rounded-2xl p-5 flex-row relative shadow-xl overflow-hidden"
+          className="bg-slate-900/70 border-l-4 border-l-rose-500 border border-y-slate-800 border-r-slate-800 rounded-2xl p-5 flex-row relative shadow-xl overflow-hidden"
         >
-          <View className="absolute -right-8 -bottom-8 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl" />
+          <View className="absolute -right-8 -bottom-8 w-24 h-24 bg-rose-500/10 rounded-full blur-xl" />
 
-          <View className="bg-emerald-500/10 w-12 h-12 rounded-xl items-center justify-center mr-4 mt-0.5">
-            <LucideIcons.Key color="#10b981" size={24} />
+          <View className="bg-rose-500/10 w-12 h-12 rounded-xl items-center justify-center mr-4 mt-0.5">
+            <LucideIcons.Key color="#f43f5e" size={24} />
           </View>
 
           <View className="flex-1 pr-12">
@@ -121,8 +121,8 @@ export default function MatchSetupScreen() {
             </Text>
           </View>
 
-          <View className="absolute top-4 right-4 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-            <Text className="text-emerald-400 font-bold text-3xs uppercase tracking-wider">
+          <View className="absolute top-4 right-4 bg-rose-500/10 px-2 py-0.5 rounded-md">
+            <Text className="text-rose-400 font-bold text-3xs uppercase tracking-wider">
               Portrait
             </Text>
           </View>
