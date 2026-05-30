@@ -32,10 +32,13 @@ export default function RoundSummaryScreen() {
   const currentEntity = participants[currentTurnIndex];
 
   const isLastTurnOfRound = currentTurnIndex === participants.length - 1;
-  const isLastRound = targetLimit !== "Infinity" && currentRound >= targetLimit;
-  const isMatchOver = isLastTurnOfRound && isLastRound;
-  const isFinalRound =
-    targetLimit !== "Infinity" && currentRound === targetLimit;
+  const nextRound = isLastTurnOfRound ? currentRound + 1 : currentRound;
+  const hasLimit = targetLimit !== "Infinity";
+
+  const isMatchOver =
+    isLastTurnOfRound && hasLimit && currentRound >= targetLimit;
+  const isNextRoundFinal =
+    isLastTurnOfRound && hasLimit && nextRound === targetLimit;
 
   const nextEntity = participants[(currentTurnIndex + 1) % participants.length];
 
@@ -77,12 +80,15 @@ export default function RoundSummaryScreen() {
   const headerText = isLastTurnOfRound
     ? `Round ${currentRound} Complete`
     : `Round ${currentRound}`;
-  let buttonText = `${nextEntity?.name} Start Turn`;
-  if (isMatchOver) buttonText = "Reveal Final Scores";
-  else if (isLastTurnOfRound && isFinalRound)
-    buttonText = `${nextEntity?.name} Start Final Round`;
-  else if (isLastTurnOfRound)
-    buttonText = `${nextEntity?.name} Start Round ${currentRound + 1}`;
+
+  const getButtonText = () => {
+    if (isMatchOver) return "Reveal Final Scores";
+    const entityName = nextEntity?.name ?? "Next";
+    if (isNextRoundFinal) return `${entityName} Start Final Round`;
+    if (isLastTurnOfRound) return `${entityName} Start Round ${nextRound}`;
+    return `${entityName} Start Turn`;
+  };
+  const buttonText = getButtonText();
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
