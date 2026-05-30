@@ -1,9 +1,12 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -19,15 +22,44 @@ import {
 import { useRosterStore } from "../../../stores/useRosterStore";
 import { Participant } from "../../../utils/database";
 import DeckSelector from "./_DeckSelector";
+import { DEFAULT_ACCENT, MODE_ACCENT } from "./_modeTheme";
 import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
+
+// Mode meta for the page header
+const MODE_META: Record<
+  string,
+  { label: string; description: string; Icon: any; orientationBadge: string }
+> = {
+  headsup: {
+    label: "Heads Up",
+    description: "Hold to your forehead. Tilt to pass or score.",
+    Icon: LucideIcons.Smartphone,
+    orientationBadge: "Landscape",
+  },
+  taboo: {
+    label: "Taboo / Charades",
+    description: "Describe or act it out as fast as possible.",
+    Icon: LucideIcons.Drama,
+    orientationBadge: "Either",
+  },
+  forbidden: {
+    label: "Forbidden",
+    description: "Describe the word without saying the forbidden ones.",
+    Icon: LucideIcons.CircleSlash,
+    orientationBadge: "Portrait",
+  },
+};
 
 export default function SettingsScreen() {
   const params = useLocalSearchParams();
   const [selectedMode] = useState(() => (params.mode as any) || "articulate");
 
-  // Destructure selectAllDecks
+  const accent = MODE_ACCENT[selectedMode] ?? DEFAULT_ACCENT;
+  const meta = MODE_META[selectedMode] ?? MODE_META.articulate;
+  const ModeIcon = meta.Icon;
+
   const {
     decks,
     selectedDeckIds,
@@ -35,12 +67,10 @@ export default function SettingsScreen() {
     toggleDeckSelection,
     selectAllDecks,
   } = useDeckStore();
-
   const gameStore = useGameStore();
   const { participants, initRoster } = useRosterStore();
 
   const scrollRef = useRef<any>(null);
-
   const cachedTeamsRef = useRef<Participant[] | null>(null);
   const cachedSolosRef = useRef<Participant[] | null>(null);
 
@@ -50,15 +80,12 @@ export default function SettingsScreen() {
   const [timerDuration, setTimerDuration] = useState(60);
   const [isDecksExpanded, setIsDecksExpanded] = useState(false);
 
-  // When page opens, load decks then immediately select all of them
   useEffect(() => {
-    const initializeDecks = async () => {
+    const init = async () => {
       await loadDecks();
       selectAllDecks();
     };
-
-    initializeDecks();
-
+    init();
     initRoster("team");
     cachedTeamsRef.current = null;
     cachedSolosRef.current = null;
@@ -66,86 +93,65 @@ export default function SettingsScreen() {
 
   const handlePlayStyleChange = (style: PlayStyle) => {
     if (style === playStyle) return;
-
-    const currentParticipants = useRosterStore.getState().participants;
-    if (playStyle === "team") {
-      cachedTeamsRef.current = currentParticipants;
-    } else {
-      cachedSolosRef.current = currentParticipants;
-    }
-
+    const cur = useRosterStore.getState().participants;
+    if (playStyle === "team") cachedTeamsRef.current = cur;
+    else cachedSolosRef.current = cur;
     setPlayStyle(style);
-
     if (style === "team") {
-      if (cachedTeamsRef.current) {
+      if (cachedTeamsRef.current)
         useRosterStore.setState({ participants: cachedTeamsRef.current });
-      } else {
-        initRoster("team");
-      }
+      else initRoster("team");
     } else {
-      if (cachedSolosRef.current) {
+      if (cachedSolosRef.current)
         useRosterStore.setState({ participants: cachedSolosRef.current });
-      } else {
-        initRoster("solo");
-      }
+      else initRoster("solo");
     }
   };
 
   const handleScoringStyleChange = (style: ScoringStyle) => {
     setScoringStyle(style);
-    if (style === "rounds") {
-      setTargetLimit((prev) =>
-        prev !== "Infinity" ? Math.min(20, Math.max(1, prev)) : 3,
+    if (style === "rounds")
+      setTargetLimit((p) =>
+        p !== "Infinity" ? Math.min(20, Math.max(1, p)) : 3,
       );
-    } else {
-      setTargetLimit((prev) =>
-        prev !== "Infinity" ? Math.min(30, Math.max(5, prev)) : 30,
+    else
+      setTargetLimit((p) =>
+        p !== "Infinity" ? Math.min(30, Math.max(5, p)) : 30,
       );
-    }
-  };
-
-  const handleToggleDeck = (id: number) => {
-    toggleDeckSelection(id);
   };
 
   const handleScrollRequest = (yPos: number) => {
-    setTimeout(() => {
-      scrollRef.current?.scrollTo({ y: yPos, animated: true });
-    }, 300);
+    setTimeout(
+      () => scrollRef.current?.scrollTo({ y: yPos, animated: true }),
+      300,
+    );
   };
 
   const handleStartGame = async () => {
     await useDeckStore.getState().loadCardsForSelectedDecks();
     const cards = useDeckStore.getState().currentCards;
-
     if (cards.length === 0) {
       Alert.alert("No Cards", "Please select at least one deck with cards.");
       setIsDecksExpanded(true);
       return;
     }
-
-    const namedParticipants = participants.filter(
-      (p) => p.name.trim().length > 0,
-    );
-
-    if (namedParticipants.length < 2) {
+    const named = participants.filter((p) => p.name.trim().length > 0);
+    if (named.length < 2) {
       Alert.alert(
         "Not enough participants",
         `You need at least 2 ${playStyle === "team" ? "teams" : "players"}.`,
       );
       return;
     }
-
     gameStore.setupMatch({
       mode: selectedMode,
       scoringStyle,
       playStyle,
       targetLimit,
       timerDuration,
-      participants: namedParticipants,
+      participants: named,
       cardsInRound: cards,
     });
-
     router.replace("/game/play");
   };
 
@@ -153,32 +159,82 @@ export default function SettingsScreen() {
   const participantLabel = playStyle === "team" ? "Teams" : "Players";
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-950">
+    <SafeAreaView style={styles.root}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <NestableScrollContainer
           ref={scrollRef}
-          contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+          contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="text-3xl font-black text-white tracking-tight mb-6">
-            Match Setup
-          </Text>
+          {/* ── Page header ── */}
+          <View style={styles.pageHeader}>
+            {/* Back nav hint */}
+            <Text style={styles.pageEyebrow}>Match Setup</Text>
+
+            {/* Mode identity card */}
+            <View
+              style={[styles.modeCard, { borderColor: accent.colorBorder }]}
+            >
+              <View style={[styles.modeCardShine]} pointerEvents="none" />
+              <LinearGradient
+                colors={[accent.colorBg, "transparent"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View
+                style={[
+                  styles.modeIconWrap,
+                  {
+                    borderColor: accent.colorBorder,
+                    backgroundColor: accent.colorBg,
+                  },
+                ]}
+              >
+                <ModeIcon size={22} color={accent.color} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modeCardTitle}>{meta.label}</Text>
+                <Text style={styles.modeCardDesc}>{meta.description}</Text>
+              </View>
+              <View
+                style={[
+                  styles.orientationBadge,
+                  {
+                    borderColor: accent.colorBorder,
+                    backgroundColor: accent.colorBg,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.orientationBadgeText,
+                    { color: accent.colorMuted },
+                  ]}
+                >
+                  {meta.orientationBadge}
+                </Text>
+              </View>
+            </View>
+          </View>
 
           <ScoringStyleSelector
             scoringStyle={scoringStyle}
             onScoringStyleChange={handleScoringStyleChange}
             targetLimit={targetLimit}
             onTargetLimitChange={setTargetLimit}
+            accent={accent}
           />
 
           <ParticipantSelector
             playStyle={playStyle}
             onPlayStyleChange={handlePlayStyleChange}
             onScrollRequest={handleScrollRequest}
+            accent={accent}
           />
 
           <DeckSelector
@@ -186,35 +242,179 @@ export default function SettingsScreen() {
             selectedDeckIds={selectedDeckIds}
             isDecksExpanded={isDecksExpanded}
             setIsDecksExpanded={setIsDecksExpanded}
-            toggleDeckSelection={handleToggleDeck}
+            toggleDeckSelection={toggleDeckSelection}
+            accent={accent}
           />
 
           <TimerSelector
             timerDuration={timerDuration}
             setTimerDuration={setTimerDuration}
+            accent={accent}
           />
         </NestableScrollContainer>
       </KeyboardAvoidingView>
 
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-slate-950/95 border-t border-slate-900">
+      {/* ── Start game footer ── */}
+      <View style={styles.footer}>
         <TouchableOpacity
           onPress={handleStartGame}
-          className="bg-emerald-600 rounded-2xl p-4 items-center shadow-lg"
+          activeOpacity={0.85}
+          style={styles.startBtn}
         >
-          <Text className="text-white font-black text-xl tracking-wide uppercase">
-            Start Game
-          </Text>
-          <Text className="text-emerald-200 text-xs mt-1 font-medium">
-            {namedCount} {participantLabel} •{" "}
-            {scoringStyle === "rounds"
-              ? targetLimit === "Infinity"
-                ? "∞ Rounds"
-                : `${targetLimit} Rounds`
-              : `${targetLimit} Tiles`}{" "}
-            • {timerDuration}s
-          </Text>
+          <LinearGradient
+            colors={[accent.color, `${accent.color}cc`]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.startBtnGradient}
+          >
+            <View style={styles.startBtnInner}>
+              <LucideIcons.Play
+                size={18}
+                color="#ffffff"
+                strokeWidth={2.5}
+                fill="#ffffff"
+              />
+              <Text style={styles.startBtnText}>Start Game</Text>
+            </View>
+            <Text style={styles.startBtnSub}>
+              {namedCount} {participantLabel}
+              {"  ·  "}
+              {scoringStyle === "rounds"
+                ? targetLimit === "Infinity"
+                  ? "Endless"
+                  : `${targetLimit} Rounds`
+                : `${targetLimit} Tiles`}
+              {"  ·  "}
+              {timerDuration}s
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#020617",
+  },
+  scroll: {
+    padding: 16,
+    paddingBottom: 160,
+  },
+
+  // ── Page header ─────────────────────────────────────────────────────────────
+  pageHeader: {
+    marginBottom: 16,
+  },
+  pageEyebrow: {
+    color: "#1e293b",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 2.5,
+    textTransform: "uppercase",
+    marginBottom: 12,
+  },
+  modeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 16,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.02)",
+  },
+  modeCardShine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modeIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  modeCardTitle: {
+    color: "#f1f5f9",
+    fontSize: 17,
+    fontWeight: "900",
+    letterSpacing: -0.3,
+    marginBottom: 3,
+  },
+  modeCardDesc: {
+    color: "#475569",
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 17,
+  },
+  orientationBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+    flexShrink: 0,
+  },
+  orientationBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+  },
+
+  // ── Footer ──────────────────────────────────────────────────────────────────
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    paddingBottom: 24,
+    backgroundColor: "rgba(2,6,23,0.96)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
+  startBtn: {
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  startBtnGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    gap: 4,
+  },
+  startBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  startBtnText: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  startBtnSub: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+});
