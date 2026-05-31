@@ -1,25 +1,32 @@
+// app/game/round-summary/_Modals.tsx
 import { useRouter } from "expo-router";
+import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import {
   Modal,
   ScrollView,
+  StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { ScoringStyle } from "../../../stores/useGameStore";
+import { ModeAccent } from "../../../utils/_modeTheme";
+import TargetLimitInput from "../settings/_TargetLimitInput";
+import TimerSelector from "../settings/_TimerSelector";
 
 interface ModalsProps {
   showExitModal: boolean;
   setShowExitModal: (show: boolean) => void;
   showSettingsModal: boolean;
   setShowSettingsModal: (show: boolean) => void;
-  editLimit: string;
-  setEditLimit: (val: string) => void;
-  editTimer: string;
-  setEditTimer: (val: string) => void;
+  editLimit: number | "Infinity";
+  setEditLimit: (val: number | "Infinity") => void;
+  editTimer: number;
+  setEditTimer: (val: number) => void;
   currentRound: number;
-  scoringStyle: string;
+  scoringStyle: ScoringStyle;
+  accent: ModeAccent;
   handleSaveSettings: () => void;
 }
 
@@ -34,87 +41,125 @@ export default function Modals({
   setEditTimer,
   currentRound,
   scoringStyle,
+  accent,
   handleSaveSettings,
 }: ModalsProps) {
   const router = useRouter();
 
   return (
     <>
-      {/* EXIT MODAL */}
+      {/* ── EXIT MODAL ── */}
       <Modal visible={showExitModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/80 justify-center items-center p-6">
-          <View className="bg-slate-900 p-6 rounded-3xl w-full border border-slate-800">
-            <Text className="text-white text-2xl font-black mb-2 text-center">
-              End Match Here?
-            </Text>
-            <Text className="text-slate-400 text-center mb-8">
+        <View style={styles.overlay}>
+          <View style={styles.exitCard}>
+            <View style={styles.exitIconWrap}>
+              <LucideIcons.DoorOpen size={28} color="#ef4444" strokeWidth={2} />
+            </View>
+            <Text style={styles.exitTitle}>End Match Here?</Text>
+            <Text style={styles.exitBody}>
               This skips remaining turns and goes straight to final results.
             </Text>
-            <View className="flex-row gap-4">
+            <View style={styles.row}>
               <TouchableOpacity
                 onPress={() => setShowExitModal(false)}
-                className="flex-1 bg-slate-800 py-4 rounded-xl items-center"
+                style={[styles.btn, styles.btnCancel]}
               >
-                <Text className="text-white font-bold">Cancel</Text>
+                <Text style={styles.btnCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
                   setShowExitModal(false);
                   router.replace("/game/match-summary" as any);
                 }}
-                className="flex-1 bg-red-600 py-4 rounded-xl items-center"
+                style={[styles.btn, styles.btnDanger]}
               >
-                <Text className="text-white font-bold">End Match</Text>
+                <LucideIcons.Flag size={15} color="#fff" strokeWidth={2.5} />
+                <Text style={styles.btnText}>End Match</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* SETTINGS MODAL */}
+      {/* ── SETTINGS MODAL ── */}
       <Modal visible={showSettingsModal} transparent animationType="slide">
-        <View className="flex-1 bg-black/80 justify-end">
+        <View style={styles.sheetOverlay}>
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }}
+            contentContainerStyle={styles.sheetScroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View className="bg-slate-900 p-6 rounded-t-3xl border-t border-slate-800 min-h-[50%]">
-              <Text className="text-white text-2xl font-black mb-6">
-                Mid-Game Adjustments
-              </Text>
+            <View style={styles.sheet}>
+              {/* Handle bar */}
+              <View style={styles.handleBar} />
 
-              <Text className="text-slate-400 font-bold mb-2">
-                Target {scoringStyle === "rounds" ? "Rounds" : "Tiles"} (Min:{" "}
-                {currentRound})
-              </Text>
-              <TextInput
-                value={editLimit}
-                onChangeText={setEditLimit}
-                keyboardType="number-pad"
-                className="bg-slate-950 text-white p-4 rounded-xl font-bold mb-6 border border-slate-800"
-              />
-
-              <Text className="text-slate-400 font-bold mb-2">
-                Timer Length (10s - 180s)
-              </Text>
-              <TextInput
-                value={editTimer}
-                onChangeText={setEditTimer}
-                keyboardType="number-pad"
-                className="bg-slate-950 text-white p-4 rounded-xl font-bold mb-8 border border-slate-800"
-              />
-
-              <View className="flex-row gap-4 mt-auto mb-4">
+              {/* Header */}
+              <View style={styles.sheetHeader}>
+                <View>
+                  <Text style={styles.sheetEyebrow}>Mid-Game</Text>
+                  <Text style={styles.sheetTitle}>Edit Settings</Text>
+                </View>
                 <TouchableOpacity
                   onPress={() => setShowSettingsModal(false)}
-                  className="flex-1 bg-slate-800 py-4 rounded-xl items-center"
+                  style={styles.closeBtn}
                 >
-                  <Text className="text-white font-bold">Cancel</Text>
+                  <LucideIcons.X size={16} color="#64748b" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Target limit — wrapped in a matching card */}
+              <View style={styles.card}>
+                <View style={styles.cardShine} pointerEvents="none" />
+                <View style={[styles.sectionLabelRow, { display: "none" }]}>
+                  <LucideIcons.Trophy
+                    size={11}
+                    color="#64748b"
+                    strokeWidth={2.5}
+                  />
+                  <Text style={styles.sectionLabel}>
+                    {scoringStyle === "rounds"
+                      ? "Target Rounds"
+                      : "Tiles to Finish"}
+                  </Text>
+                </View>
+                <TargetLimitInput
+                  scoringStyle={scoringStyle}
+                  targetLimit={editLimit}
+                  onTargetLimitChange={(val) => {
+                    if (scoringStyle === "rounds" && val !== "Infinity") {
+                      setEditLimit(Math.max(currentRound, val as number));
+                    } else {
+                      setEditLimit(val);
+                    }
+                  }}
+                  accent={accent}
+                  lockedMinRounds={
+                    scoringStyle === "rounds" ? currentRound : undefined
+                  }
+                />
+              </View>
+
+              {/* Timer selector */}
+              <TimerSelector
+                timerDuration={editTimer}
+                setTimerDuration={setEditTimer}
+                accent={accent}
+              />
+
+              {/* Actions */}
+              <View style={styles.row}>
+                <TouchableOpacity
+                  onPress={() => setShowSettingsModal(false)}
+                  style={[styles.btn, styles.btnCancel]}
+                >
+                  <Text style={styles.btnCancelText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleSaveSettings}
-                  className="flex-1 bg-blue-600 py-4 rounded-xl items-center"
+                  style={[styles.btn, styles.btnPrimary]}
                 >
-                  <Text className="text-white font-bold">Save Changes</Text>
+                  <LucideIcons.Check size={15} color="#fff" strokeWidth={2.5} />
+                  <Text style={styles.btnText}>Save Changes</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -124,3 +169,182 @@ export default function Modals({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  // ── Exit modal ──────────────────────────────────────────────────────────────
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.82)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  exitCard: {
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    borderRadius: 28,
+    padding: 28,
+    width: "100%",
+    alignItems: "center",
+  },
+  exitIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: "rgba(239,68,68,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  exitTitle: {
+    color: "#f1f5f9",
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: -0.3,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  exitBody: {
+    color: "#475569",
+    fontSize: 13,
+    fontWeight: "500",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+
+  // ── Shared buttons ───────────────────────────────────────────────────────────
+  row: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  btn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 15,
+    borderRadius: 16,
+  },
+  btnCancel: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  btnCancelText: {
+    color: "#64748b",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  btnDanger: {
+    backgroundColor: "#dc2626",
+  },
+  btnPrimary: {
+    backgroundColor: "#2563eb",
+  },
+  btnText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  // ── Settings sheet ───────────────────────────────────────────────────────────
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    justifyContent: "flex-end",
+  },
+  sheetScroll: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: "#020617",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    padding: 20,
+    paddingBottom: 36,
+    gap: 0,
+  },
+  handleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  sheetEyebrow: {
+    color: "#334155",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 2.5,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  sheetTitle: {
+    color: "#f1f5f9",
+    fontSize: 24,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ── Card wrapper (matches settings page cards) ───────────────────────────────
+  card: {
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  cardShine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "35%",
+    backgroundColor: "rgba(255,255,255,0.025)",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  sectionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 14,
+  },
+  sectionLabel: {
+    color: "#475569",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+});

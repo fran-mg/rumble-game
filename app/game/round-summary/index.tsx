@@ -1,9 +1,11 @@
+// app/game/round-summary/index.tsx
 import { useRouter } from "expo-router";
 import * as LucideIcons from "lucide-react-native";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGameStore } from "../../../stores/useGameStore";
+import { getModeAccent } from "../../../utils/_modeTheme";
 import HistoryList from "./_HistoryList";
 import Modals from "./_Modals";
 import ScoreHeader from "./_ScoreHeader";
@@ -12,6 +14,7 @@ export default function RoundSummaryScreen() {
   const router = useRouter();
   const gameStore = useGameStore();
   const {
+    mode,
     playStyle,
     participants,
     currentTurnIndex,
@@ -22,12 +25,17 @@ export default function RoundSummaryScreen() {
     turnPasses,
     roundScores,
     scoringStyle,
+    timerDuration,
   } = gameStore;
+
+  const accent = getModeAccent(mode);
+
+  // Mid-game edit state — typed to match the selector components
+  const [editLimit, setEditLimit] = useState<number | "Infinity">(targetLimit);
+  const [editTimer, setEditTimer] = useState<number>(timerDuration);
 
   const [showExitModal, setShowExitModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [editLimit, setEditLimit] = useState(String(targetLimit));
-  const [editTimer, setEditTimer] = useState(String(gameStore.timerDuration));
 
   const currentEntity = participants[currentTurnIndex];
 
@@ -61,20 +69,35 @@ export default function RoundSummaryScreen() {
   };
 
   const handleSaveSettings = () => {
-    let newLim: number | "Infinity" = "Infinity";
+    // Clamp limit: rounds mode cannot go below currentRound
+    let newLim: number | "Infinity" = editLimit;
     if (editLimit !== "Infinity") {
-      const parsed = parseInt(editLimit) || currentRound;
+      const parsed = typeof editLimit === "number" ? editLimit : currentRound;
       if (scoringStyle === "rounds")
         newLim = Math.min(20, Math.max(currentRound, parsed));
-      if (scoringStyle === "boardgame")
-        newLim = Math.min(30, Math.max(5, parsed));
+      else newLim = Math.min(30, Math.max(5, parsed));
     }
+
+    // Clamp timer
+    const newTimer = Math.min(180, Math.max(10, editTimer));
 
     gameStore.updateSettingsMidGame({
       targetLimit: newLim,
-      timerDuration: Math.min(180, Math.max(10, parseInt(editTimer) || 60)),
+      timerDuration: newTimer,
     });
+
+    // Sync local state to clamped values so UI stays consistent
+    setEditLimit(newLim);
+    setEditTimer(newTimer);
+
     setShowSettingsModal(false);
+  };
+
+  // Re-open the modal with fresh store values each time
+  const handleOpenSettings = () => {
+    setEditLimit(gameStore.targetLimit);
+    setEditTimer(gameStore.timerDuration);
+    setShowSettingsModal(true);
   };
 
   const headerText = isLastTurnOfRound
@@ -84,16 +107,16 @@ export default function RoundSummaryScreen() {
   const getButtonText = () => {
     if (isMatchOver) return "Reveal Final Scores";
     const entityName = nextEntity?.name ?? "Next";
-    if (isNextRoundFinal) return `${entityName} Start Final Round`;
-    if (isLastTurnOfRound) return `${entityName} Start Round ${nextRound}`;
-    return `${entityName} Start Turn`;
+    if (isNextRoundFinal) return `${entityName} — Start Final Round`;
+    if (isLastTurnOfRound) return `${entityName} — Start Round ${nextRound}`;
+    return `${entityName} — Start Turn`;
   };
   const buttonText = getButtonText();
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
       <View className="flex-row justify-between px-6 pt-4">
-        <TouchableOpacity onPress={() => setShowSettingsModal(true)}>
+        <TouchableOpacity onPress={handleOpenSettings}>
           <LucideIcons.Settings color="#94A3B8" size={28} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setShowExitModal(true)}>
@@ -136,6 +159,7 @@ export default function RoundSummaryScreen() {
         setEditTimer={setEditTimer}
         currentRound={currentRound}
         scoringStyle={scoringStyle}
+        accent={accent}
         handleSaveSettings={handleSaveSettings}
       />
     </SafeAreaView>
