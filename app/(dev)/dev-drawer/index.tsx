@@ -8,38 +8,23 @@ import { styles } from "./DevDrawer.styles";
 export default function DevDrawer() {
   const {
     isDrawerOpen,
-    totalDrawerHeight,
     drawerTranslateY,
     arrowRotation,
     toggleDrawer,
-    onContentLayout,
-    TAB_HEIGHT,
+    onDrawerBodyLayout,
   } = useDevDrawer();
 
   return (
     <Animated.View
       style={[
         styles.container,
-        {
-          height: totalDrawerHeight,
-          transform: [{ translateY: drawerTranslateY }],
-        },
+        { transform: [{ translateY: drawerTranslateY }] },
       ]}
       pointerEvents="box-none"
     >
-      {/* Arrow tab */}
-      <TouchableOpacity
-        onPress={toggleDrawer}
-        activeOpacity={0.75}
-        style={styles.arrowTab}
-      >
-        <View
-          style={[
-            styles.arrowTabInner,
-            isDrawerOpen && styles.arrowTabInnerOpen,
-          ]}
-          pointerEvents="none"
-        >
+      {/* Arrow tab — naturally sits on top of the drawer body in the column */}
+      <TouchableOpacity onPress={toggleDrawer} activeOpacity={0.75}>
+        <View style={[styles.arrowTab, isDrawerOpen && styles.arrowTabOpen]}>
           <View style={styles.arrowTabLabel}>
             {!isDrawerOpen && <Text style={styles.arrowTabText}>DEV</Text>}
             <Animated.View style={{ transform: [{ rotate: arrowRotation }] }}>
@@ -49,11 +34,11 @@ export default function DevDrawer() {
         </View>
       </TouchableOpacity>
 
-      {/* Drawer body */}
+      {/* Drawer body — measures itself to drive the translation */}
       <View
-        pointerEvents="auto"
         style={styles.drawerBody}
-        onLayout={(e) => onContentLayout(e.nativeEvent.layout.height)}
+        pointerEvents="auto"
+        onLayout={(e) => onDrawerBodyLayout(e.nativeEvent.layout.height)}
       >
         <DevToolsDrawer />
       </View>

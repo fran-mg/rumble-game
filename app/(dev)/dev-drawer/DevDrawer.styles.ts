@@ -4,25 +4,20 @@ export default function DummyRoute() {
   return null;
 }
 
-export const TAB_HEIGHT = 80;
-
 export const styles = StyleSheet.create({
+  // Sits at the bottom of the screen; height = arrowTab + drawerBody.
+  // We translate it DOWN by drawerBodyHeight to hide body, UP to reveal.
   container: {
     position: "absolute",
-    bottom: -20,
+    bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: "column",
+    alignItems: "center", // centres the arrow tab horizontally
   },
+
+  // ── Arrow tab (always rendered at the top of the flex column) ────────────
   arrowTab: {
-    position: "absolute",
-    top: 0,
-    alignSelf: "center",
-    zIndex: 10,
-    paddingTop: 10,
-    paddingBottom: 0,
-    paddingHorizontal: 20,
-  },
-  arrowTabInner: {
     backgroundColor: "#1c0808",
     borderWidth: 1,
     borderColor: "rgba(239,68,68,0.4)",
@@ -30,15 +25,15 @@ export const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingHorizontal: 22,
-    paddingTop: 16,
-    paddingBottom: 12,
-    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 20,
     minWidth: 80,
+    alignItems: "center",
   },
-  arrowTabInnerOpen: {
-    paddingTop: 7,
-    paddingBottom: 6,
+  arrowTabOpen: {
     paddingHorizontal: 16,
+    paddingTop: 7,
+    paddingBottom: 7,
   },
   arrowTabLabel: {
     flexDirection: "row",
@@ -51,7 +46,9 @@ export const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 2,
   },
+
+  // ── Drawer body (sits flush below the arrow tab) ─────────────────────────
   drawerBody: {
-    marginTop: TAB_HEIGHT,
+    alignSelf: "stretch", // full width
   },
 });
