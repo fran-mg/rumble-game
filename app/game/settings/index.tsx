@@ -27,31 +27,6 @@ import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
 
-// Mode meta for the page header
-const MODE_META: Record<
-  string,
-  { label: string; description: string; Icon: any; orientationBadge: string }
-> = {
-  headsup: {
-    label: "Heads Up",
-    description: "Hold to your forehead. Tilt to pass or score.",
-    Icon: LucideIcons.Smartphone,
-    orientationBadge: "Landscape",
-  },
-  taboo: {
-    label: "Taboo / Charades",
-    description: "Describe or act it out as fast as possible.",
-    Icon: LucideIcons.Drama,
-    orientationBadge: "Either",
-  },
-  forbidden: {
-    label: "Forbidden",
-    description: "Describe the word without saying the forbidden ones.",
-    Icon: LucideIcons.CircleSlash,
-    orientationBadge: "Portrait",
-  },
-};
-
 export default function SettingsScreen() {
   const params = useLocalSearchParams();
   const [selectedMode] = useState(() => (params.mode as any) || "articulate");

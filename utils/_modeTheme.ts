@@ -115,7 +115,7 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
       label: "Taboo / Charades",
       description: "Describe or act it out as fast as you can.",
       Icon: LucideIcons.Drama,
-      orientationBadge: "Either",
+      orientationBadge: "Rotate",
       orientation: "any",
       usesTilt: false,
       showsForbiddenWords: false,
