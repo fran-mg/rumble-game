@@ -268,9 +268,9 @@ function TimerPill({
   );
 }
 
-// ─── Forbidden Words ──────────────────────────────────────────────────────────
+// ─── Taboo Words ──────────────────────────────────────────────────────────
 
-function ForbiddenWordsList({
+function TabooWordsList({
   words,
   accentColor,
 }: {
@@ -278,14 +278,14 @@ function ForbiddenWordsList({
   accentColor: string;
 }) {
   return (
-    <View style={styles.forbiddenContainer}>
-      <View style={styles.forbiddenHeader}>
+    <View style={styles.tabooContainer}>
+      <View style={styles.tabooHeader}>
         <LucideIcons.Ban
           size={10}
           color="rgba(255,255,255,0.4)"
           strokeWidth={2.5}
         />
-        <Text style={styles.forbiddenHeaderText}>DO NOT SAY</Text>
+        <Text style={styles.tabooHeaderText}>DO NOT SAY</Text>
         <LucideIcons.Ban
           size={10}
           color="rgba(255,255,255,0.4)"
@@ -293,14 +293,11 @@ function ForbiddenWordsList({
         />
       </View>
       {words.slice(0, 5).map((w, i) => (
-        <View key={i} style={styles.forbiddenWordRow}>
+        <View key={i} style={styles.tabooWordRow}>
           <View
-            style={[
-              styles.forbiddenWordBullet,
-              { backgroundColor: accentColor },
-            ]}
+            style={[styles.tabooWordBullet, { backgroundColor: accentColor }]}
           />
-          <Text style={styles.forbiddenWordText} numberOfLines={1}>
+          <Text style={styles.tabooWordText} numberOfLines={1}>
             {w.toUpperCase()}
           </Text>
         </View>
@@ -347,41 +344,41 @@ function CardActionButtons({
 
 interface AdaptiveWordDisplayProps {
   word: string;
-  showForbiddenWords: boolean;
+  showTabooWords: boolean;
   fadeAnim: Animated.Value;
   slideAnim: Animated.Value;
   accentColor: string;
-  forbiddenWords: string[];
+  tabooWords: string[];
   innerBorder: string;
 }
 
 function AdaptiveWordDisplay({
   word,
-  showForbiddenWords,
+  showTabooWords,
   fadeAnim,
   slideAnim,
   accentColor,
-  forbiddenWords,
+  tabooWords,
   innerBorder,
 }: AdaptiveWordDisplayProps) {
   const [faceLayout, setFaceLayout] = useState<{
     width: number;
     height: number;
   } | null>(null);
-  const [forbiddenHeight, setForbiddenHeight] = useState(0);
+  const [tabooHeight, setTabooHeight] = useState(0);
 
   const handleFaceLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     if (width > 0 && height > 0) setFaceLayout({ width, height });
   }, []);
 
-  const handleForbiddenLayout = useCallback((e: LayoutChangeEvent) => {
-    setForbiddenHeight(e.nativeEvent.layout.height);
+  const handleTabooLayout = useCallback((e: LayoutChangeEvent) => {
+    setTabooHeight(e.nativeEvent.layout.height);
   }, []);
 
-  const GAP = showForbiddenWords ? 24 : 0;
+  const GAP = showTabooWords ? 24 : 0;
   const availH = faceLayout
-    ? Math.max(0, faceLayout.height - forbiddenHeight - GAP)
+    ? Math.max(0, faceLayout.height - tabooHeight - GAP)
     : 0;
   const availW = faceLayout?.width ?? 0;
 
@@ -423,15 +420,12 @@ function AdaptiveWordDisplay({
           </Text>
         </Animated.View>
 
-        {showForbiddenWords && (
-          <View style={styles.forbiddenRegion} onLayout={handleForbiddenLayout}>
+        {showTabooWords && (
+          <View style={styles.tabooRegion} onLayout={handleTabooLayout}>
             <View
               style={[styles.wordDivider, { backgroundColor: innerBorder }]}
             />
-            <ForbiddenWordsList
-              words={forbiddenWords}
-              accentColor={accentColor}
-            />
+            <TabooWordsList words={tabooWords} accentColor={accentColor} />
           </View>
         )}
       </View>
@@ -491,16 +485,15 @@ export default function PlayingCard({
   const cardTheme = resolveCardTheme(mode, flashState);
   const { card: baseCardTheme, meta } = getModeTheme(mode);
 
-  let forbiddenWords: string[] = [];
-  if (meta.showsForbiddenWords && currentCard?.taboo_words) {
+  let tabooWords: string[] = [];
+  if (meta.showsTabooWords && currentCard?.taboo_words) {
     try {
-      forbiddenWords = JSON.parse(currentCard.taboo_words);
+      tabooWords = JSON.parse(currentCard.taboo_words);
     } catch {
       /* empty */
     }
   }
-  const showForbiddenWords =
-    forbiddenWords.length > 0 && flashState === "default";
+  const showTabooWords = tabooWords.length > 0 && flashState === "default";
 
   const ModeIcon = meta.Icon;
 
@@ -585,11 +578,11 @@ export default function PlayingCard({
           ) : (
             <AdaptiveWordDisplay
               word={currentCard?.word ?? ""}
-              showForbiddenWords={showForbiddenWords}
+              showTabooWords={showTabooWords}
               fadeAnim={fadeAnim}
               slideAnim={slideAnim}
               accentColor={cardTheme.accentColor}
-              forbiddenWords={forbiddenWords}
+              tabooWords={tabooWords}
               innerBorder={cardTheme.innerBorder}
             />
           )}
@@ -737,7 +730,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 8,
     flexShrink: 0,
   },
-  forbiddenRegion: {
+  tabooRegion: {
     width: "100%",
     alignItems: "center",
     flexShrink: 0,
@@ -748,24 +741,24 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     marginBottom: 14,
   },
-  forbiddenContainer: {
+  tabooContainer: {
     width: "100%",
     alignItems: "center",
     gap: 5,
   },
-  forbiddenHeader: {
+  tabooHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginBottom: 4,
   },
-  forbiddenHeaderText: {
+  tabooHeaderText: {
     color: "rgba(255,255,255,0.4)",
     fontSize: 9,
     fontWeight: "800",
     letterSpacing: 2.5,
   },
-  forbiddenWordRow: {
+  tabooWordRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -776,13 +769,13 @@ const styles = StyleSheet.create({
     width: "82%",
     justifyContent: "center",
   },
-  forbiddenWordBullet: {
+  tabooWordBullet: {
     width: 4,
     height: 4,
     borderRadius: 2,
     opacity: 0.65,
   },
-  forbiddenWordText: {
+  tabooWordText: {
     color: "rgba(255,255,255,0.75)",
     fontSize: 14,
     fontWeight: "700",

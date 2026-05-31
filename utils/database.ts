@@ -183,9 +183,9 @@ const seedInitialData = async (): Promise<void> => {
       await db.runAsync(`
         INSERT INTO game_modes (name, display_name, description, icon, is_enabled) VALUES
           ('headsup', 'Heads Up', 'Guess the word by what's described to you.',         'Smartphone', 1),
-          ('taboo',      'Taboo',      'Describe the word without saying it.',       'Drama',           1),
+          ('catchphrase',      'Catchphrase',      'Describe the word without saying it.',       'Hourglass',           1),
           ('charades',   'Charades',   'Act it out — no speaking allowed.',             'Drama',         1),
-          ('forbidden',   'Forbidden',   'Describe without using forbidden words.',   'CircleSlash',           1),
+          ('taboo',   'Taboo',   'Describe without using forbidden words.',   'CircleSlash',           1),
           ('boardgame',  'Board Game', 'Race along the track — category tiles decide.','Trophy',        1);
       `);
     }

@@ -27,7 +27,7 @@ export default function RoundTestScreen() {
     // 3. Inject simulated state directly into Zustand
     // We simulate that `endTurn()` was already called (which writes to roundScores)
     useGameStore.setState({
-      mode: "taboo",
+      mode: "catchphrase",
       scoringStyle: "rounds",
       playStyle: "solo",
       targetLimit: 3,

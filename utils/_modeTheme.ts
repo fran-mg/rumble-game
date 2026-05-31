@@ -30,7 +30,7 @@ export interface ModeMeta {
   orientationBadge: string;
   orientation: "landscape" | "portrait" | "any";
   usesTilt: boolean;
-  showsForbiddenWords: boolean;
+  showsTabooWords: boolean;
   showsButtons: boolean;
 }
 
@@ -90,12 +90,12 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
       orientationBadge: "Landscape",
       orientation: "landscape",
       usesTilt: true,
-      showsForbiddenWords: false,
+      showsTabooWords: false,
       showsButtons: false,
     },
   },
 
-  taboo: {
+  catchphrase: {
     accent: {
       color: "#0891b2",
       colorMuted: "#a5f3fc",
@@ -108,22 +108,22 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
       shadowColor: "#0891b2",
       accentColor: "#67e8f9",
       labelColor: "#a5f3fc",
-      label: "TABOO",
+      label: "CATCHPHRASE",
       innerBorder: "rgba(103,232,249,0.2)",
     },
     meta: {
-      label: "Taboo / Charades",
+      label: "Catchphrase",
       description: "Describe or act it out as fast as you can.",
-      Icon: LucideIcons.Drama,
+      Icon: LucideIcons.Hourglass,
       orientationBadge: "Rotate",
       orientation: "any",
       usesTilt: false,
-      showsForbiddenWords: false,
+      showsTabooWords: false,
       showsButtons: true,
     },
   },
 
-  forbidden: {
+  taboo: {
     accent: {
       color: "#e11d48",
       colorMuted: "#fecdd3",
@@ -136,17 +136,17 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
       shadowColor: "#e11d48",
       accentColor: "#fda4af",
       labelColor: "#fecdd3",
-      label: "FORBIDDEN",
+      label: "TABOO",
       innerBorder: "rgba(253,164,175,0.2)",
     },
     meta: {
-      label: "Forbidden",
-      description: "Describe the word without saying the forbidden ones.",
+      label: "Taboo",
+      description: "Describe without saying the forbidden words.",
       Icon: LucideIcons.CircleSlash,
       orientationBadge: "Portrait",
       orientation: "portrait",
       usesTilt: false,
-      showsForbiddenWords: true,
+      showsTabooWords: true,
       showsButtons: true,
     },
   },
@@ -154,12 +154,12 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
 
 // ─── Fallback ─────────────────────────────────────────────────────────────────
 
-export const DEFAULT_MODE_THEME = MODE_THEMES.taboo;
+export const DEFAULT_MODE_THEME = MODE_THEMES.catchphrase;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Safe lookup — always returns a full ModeTheme, falling back to taboo.
+ * Safe lookup — always returns a full ModeTheme, falling back to catchphrase.
  *
  *   const { accent, card, meta } = getModeTheme(mode);
  */
@@ -205,7 +205,7 @@ export function getModeMeta(mode: string): ModeMeta {
  * All registered mode keys in display order.
  * Used by the home screen to render the mode list without hardcoding strings.
  *
- *   const modes = getAllModes(); // ["headsup", "taboo", "forbidden"]
+ *   const modes = getAllModes(); // ["headsup", "catchphrase", "taboo"]
  */
 export function getAllModes(): string[] {
   return Object.keys(MODE_THEMES);

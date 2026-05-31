@@ -1,3 +1,3 @@
 # articulate-game
 
-Multiplayer party word game - Articulate, Taboo, Charades
+Multiplayer party word game - Heads Up, Catchphrase, Taboo

@@ -61,7 +61,7 @@ export default function MatchTestScreen() {
     // 3. Inject simulated state directly into Zustand using setState
     // (setupMatch forces roundScores to {} so we must bypass it)
     useGameStore.setState({
-      mode: "taboo",
+      mode: "catchphrase",
       scoringStyle: "rounds",
       playStyle: "solo",
       targetLimit: 10,

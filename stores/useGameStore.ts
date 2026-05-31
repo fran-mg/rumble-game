@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { Participant } from "../utils/database";
 
-export type GameMode = "headsup" | "taboo" | "forbidden";
+export type GameMode = "headsup" | "catchphrase" | "taboo";
 export type ScoringStyle = "rounds" | "boardgame";
 export type PlayStyle = "solo" | "team";
 type CardResult = "guessed" | "passed";
