@@ -365,12 +365,10 @@ function AdaptiveWordDisplay({
   forbiddenWords,
   innerBorder,
 }: AdaptiveWordDisplayProps) {
-  // Layout of the whole face area (measured via onLayout on adaptiveContainer)
   const [faceLayout, setFaceLayout] = useState<{
     width: number;
     height: number;
   } | null>(null);
-  // Actual rendered height of the forbidden block (measured via onLayout)
   const [forbiddenHeight, setForbiddenHeight] = useState(0);
 
   const handleFaceLayout = useCallback((e: LayoutChangeEvent) => {
@@ -382,8 +380,7 @@ function AdaptiveWordDisplay({
     setForbiddenHeight(e.nativeEvent.layout.height);
   }, []);
 
-  // Word area height = face height minus forbidden block minus divider gap
-  const GAP = showForbiddenWords ? 14 : 0;
+  const GAP = showForbiddenWords ? 24 : 0;
   const availH = faceLayout
     ? Math.max(0, faceLayout.height - forbiddenHeight - GAP)
     : 0;
@@ -396,45 +393,49 @@ function AdaptiveWordDisplay({
 
   return (
     <View style={styles.adaptiveContainer} onLayout={handleFaceLayout}>
-      {/* Word — vertically centred in available space */}
-      <Animated.View
-        style={[
-          styles.wordAnimWrapper,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
-        <Text
+      {/*
+        Inner cluster: phrase + doNotSay sit together, centred in the
+        full face area. We don't stretch either child — they take only
+        the height they need, and flexbox centres the pair vertically.
+      */}
+      <View style={styles.clusterWrapper}>
+        <Animated.View
           style={[
-            styles.mainWord,
+            styles.wordAnimWrapper,
             {
-              fontSize: sizing.fontSize,
-              lineHeight: lineHeightAt(sizing.fontSize),
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
             },
           ]}
-          numberOfLines={sizing.numberOfLines}
-          adjustsFontSizeToFit={false}
-          // wordWrap allows splitting at spaces; clip keeps single words intact
-          lineBreakMode={sizing.allowWrap ? "tail" : "clip"}
         >
-          {word}
-        </Text>
-      </Animated.View>
+          <Text
+            style={[
+              styles.mainWord,
+              {
+                fontSize: sizing.fontSize,
+                lineHeight: lineHeightAt(sizing.fontSize),
+              },
+            ]}
+            numberOfLines={sizing.numberOfLines}
+            adjustsFontSizeToFit={false}
+            lineBreakMode={sizing.allowWrap ? "tail" : "clip"}
+          >
+            {word}
+          </Text>
+        </Animated.View>
 
-      {/* Forbidden words — anchored at bottom, measured for height subtraction */}
-      {showForbiddenWords && (
-        <View style={styles.forbiddenRegion} onLayout={handleForbiddenLayout}>
-          <View
-            style={[styles.wordDivider, { backgroundColor: innerBorder }]}
-          />
-          <ForbiddenWordsList
-            words={forbiddenWords}
-            accentColor={accentColor}
-          />
-        </View>
-      )}
+        {showForbiddenWords && (
+          <View style={styles.forbiddenRegion} onLayout={handleForbiddenLayout}>
+            <View
+              style={[styles.wordDivider, { backgroundColor: innerBorder }]}
+            />
+            <ForbiddenWordsList
+              words={forbiddenWords}
+              accentColor={accentColor}
+            />
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -714,11 +715,15 @@ const styles = StyleSheet.create({
   adaptiveContainer: {
     flex: 1,
     width: "100%",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
   },
+  clusterWrapper: {
+    width: "100%",
+    alignItems: "center",
+    gap: 24,
+  },
   wordAnimWrapper: {
-    flex: 1,
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
