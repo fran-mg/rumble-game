@@ -1,137 +1,239 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import * as LucideIcons from "lucide-react-native";
+import React, { useRef, useState } from "react";
 import {
+  Animated,
+  LayoutAnimation,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as LucideIcons from "lucide-react-native";
 import { getAllModes, getModeTheme } from "../utils/_modeTheme";
+import DevToolsDrawer from "./_DevToolsDrawer";
 
-const isProductionTest = true; // false = expose dev tools, true = show user views only
+if (Platform.OS === "android") {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
+
+// true = user view, false = show dev tools
+const isProductionTest = false;
 
 export default function HomeScreen() {
   const router = useRouter();
   const modes = getAllModes();
+
+  const drawerAnim = useRef(new Animated.Value(0)).current;
+  const isOpenRef = useRef(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Dynamic drawer height measured from content
+  const [drawerContentHeight, setDrawerContentHeight] = useState(0);
+  const DRAWER_EXTRA_PADDING = 32;
+  const TAB_HEIGHT = 48;
+  const drawerBodyHeight = drawerContentHeight + DRAWER_EXTRA_PADDING;
+  const totalDrawerHeight = drawerBodyHeight + TAB_HEIGHT;
+
+  const toggleDrawer = () => {
+    const opening = !isOpenRef.current;
+    isOpenRef.current = opening;
+    setIsDrawerOpen(opening);
+    Animated.spring(drawerAnim, {
+      toValue: opening ? 1 : 0,
+      friction: 16,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const drawerTranslateY = drawerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [drawerBodyHeight, 0],
+  });
+
+  const arrowRotation = drawerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
 
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>Select Game Mode</Text>
         <Text style={styles.subtitle}>
-          Click game mode below to enter match settings page, then start your
-          game.
+          Choose a mode below to enter match settings, then start your game.
         </Text>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* --- USER DECKS BUTTON --- */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push("/decks")}
-          style={styles.decksButton}
+      {/* ── Body: mode list + decks button fills remaining space ── */}
+      <View style={styles.body}>
+        {/* Mode cards — only scroll if they overflow */}
+        <ScrollView
+          style={styles.modesScroll}
+          contentContainerStyle={styles.modesScrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={true}
         >
-          <LucideIcons.Library color="#ffffff" size={20} />
-          <Text style={styles.decksButtonText}>Manage Card Decks</Text>
-        </TouchableOpacity>
+          {modes.map((modeKey) => {
+            const { accent, meta } = getModeTheme(modeKey);
+            const Icon = meta.Icon;
 
-        {/* --- GAME MODES --- */}
-        {modes.map((modeKey) => {
-          const { accent, meta } = getModeTheme(modeKey);
-          const Icon = meta.Icon;
-
-          return (
-            <TouchableOpacity
-              key={modeKey}
-              activeOpacity={0.75}
-              onPress={() =>
-                router.push({
-                  pathname: "/game/settings",
-                  params: { mode: modeKey },
-                })
-              }
-              style={[styles.modeCard, { borderLeftColor: accent.color }]}
-            >
-              <View
-                style={[
-                  styles.modeCardGlow,
-                  { backgroundColor: accent.colorBg },
-                ]}
-              />
-              <View
-                style={[
-                  styles.iconWrap,
-                  {
-                    backgroundColor: accent.colorBg,
-                    borderColor: accent.colorBorder,
-                  },
-                ]}
+            return (
+              <TouchableOpacity
+                key={modeKey}
+                activeOpacity={0.75}
+                onPress={() =>
+                  router.push({
+                    pathname: "/game/settings",
+                    params: { mode: modeKey },
+                  })
+                }
+                style={[styles.modeCard, { borderLeftColor: accent.color }]}
               >
-                <Icon size={22} color={accent.color} strokeWidth={2} />
-              </View>
-              <View style={styles.modeCardText}>
-                <View style={styles.titleStrip}>
-                  <Text style={styles.modeCardTitle}>{meta.label}</Text>
-                  <View
-                    style={[
-                      styles.orientationBadge,
-                      {
-                        backgroundColor: accent.colorBg,
-                        borderColor: accent.colorBorder,
-                      },
-                    ]}
-                  >
-                    <Text
+                <View
+                  style={[
+                    styles.modeCardGlow,
+                    { backgroundColor: accent.colorBg },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.iconWrap,
+                    {
+                      backgroundColor: accent.colorBg,
+                      borderColor: accent.colorBorder,
+                    },
+                  ]}
+                >
+                  <Icon size={22} color={accent.color} strokeWidth={2} />
+                </View>
+                <View style={styles.modeCardText}>
+                  <View style={styles.titleStrip}>
+                    <Text style={styles.modeCardTitle}>{meta.label}</Text>
+                    <View
                       style={[
-                        styles.orientationBadgeText,
-                        { color: accent.colorMuted },
+                        styles.orientationBadge,
+                        {
+                          backgroundColor: accent.colorBg,
+                          borderColor: accent.colorBorder,
+                        },
                       ]}
                     >
-                      {meta.orientationBadge}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.orientationBadgeText,
+                          { color: accent.colorMuted },
+                        ]}
+                      >
+                        {meta.orientationBadge}
+                      </Text>
+                    </View>
                   </View>
+                  <Text style={styles.modeCardDesc}>{meta.description}</Text>
                 </View>
-                <Text style={styles.modeCardDesc}>{meta.description}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
-        {/* --- DEV TOOLS (ONLY SHOWS IN EXPO GO / LOCAL DEV) --- */}
-        {__DEV__ && !isProductionTest && (
-          <View style={styles.devBox}>
-            <Text style={styles.devTitle}>Developer Tools</Text>
-            <View style={styles.devRow}>
-              <TouchableOpacity
-                onPress={() => router.push("/(dev)/round-test")}
-                style={styles.devBtn}
-              >
-                <Text style={styles.devBtnText}>Round Test</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push("/(dev)/match-test")}
-                style={styles.devBtn}
-              >
-                <Text style={styles.devBtnText}>Match Test</Text>
-              </TouchableOpacity>
+        {/* ── Decks button — centred in remaining space ── */}
+        <View style={styles.decksWrapper}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/decks")}
+            style={styles.decksButton}
+          >
+            <View style={styles.decksButtonGlow} />
+            <View style={styles.decksButtonIcon}>
+              <LucideIcons.Library color="#94a3b8" size={20} strokeWidth={2} />
             </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.decksButtonText}>Card Decks</Text>
+              <Text style={styles.decksButtonSub}>Manage & create packs</Text>
+            </View>
+            <LucideIcons.ChevronRight
+              color="#475569"
+              size={18}
+              strokeWidth={2.5}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── Dev Tools drawer ── */}
+      {__DEV__ && !isProductionTest && (
+        <Animated.View
+          style={[
+            styles.devDrawerContainer,
+            {
+              height: totalDrawerHeight,
+              transform: [{ translateY: drawerTranslateY }],
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          {/* Arrow tab */}
+          <TouchableOpacity
+            onPress={toggleDrawer}
+            activeOpacity={0.75}
+            style={styles.devArrowTab}
+          >
+            <View
+              style={[
+                styles.devArrowTabInner,
+                isDrawerOpen && styles.devArrowTabInnerOpen,
+              ]}
+              pointerEvents="auto"
+            >
+              <View style={styles.devArrowTabLabel}>
+                {!isDrawerOpen && (
+                  <Text style={styles.devArrowTabText}>DEV</Text>
+                )}
+                <Animated.View
+                  style={{ transform: [{ rotate: arrowRotation }] }}
+                >
+                  <LucideIcons.ChevronUp
+                    color="#ef4444"
+                    size={20}
+                    strokeWidth={3}
+                  />
+                </Animated.View>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Drawer body — measures its content height on first render */}
+          <View
+            pointerEvents="auto"
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              if (h > 0 && h !== drawerContentHeight) {
+                setDrawerContentHeight(h);
+              }
+            }}
+          >
+            <DevToolsDrawer />
           </View>
-        )}
-      </ScrollView>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#020617", paddingHorizontal: 20 },
-  header: { paddingTop: 16, marginBottom: 24 },
+  root: {
+    flex: 1,
+    backgroundColor: "#020617",
+    paddingHorizontal: 20,
+  },
+  header: {
+    paddingTop: 16,
+    marginBottom: 20,
+  },
   title: {
     color: "#f1f5f9",
     fontSize: 28,
@@ -145,26 +247,76 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 20,
   },
-  scroll: { flex: 1 },
-  scrollContent: { gap: 12, paddingBottom: 40 },
 
-  decksButton: {
-    backgroundColor: "#3B82F6",
-    flexDirection: "row",
-    alignItems: "center",
+  // ── Body ──────────────────────────────────────────────────────────────────
+  body: {
+    flex: 1,
+  },
+  modesScroll: {
+    flexShrink: 1,
+    flexGrow: 0,
+  },
+  modesScrollContent: {
+    gap: 12,
+  },
+
+  // ── Decks wrapper — fills leftover vertical space, centres content ─────────
+  decksWrapper: {
+    flex: 1,
     justifyContent: "center",
     paddingVertical: 16,
+    minHeight: 96,
+  },
+  decksButton: {
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
     borderRadius: 20,
-    gap: 10,
-    marginBottom: 8,
+    padding: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  decksButtonGlow: {
+    position: "absolute",
+    right: -24,
+    bottom: -24,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "rgba(148,163,184,0.06)",
+  },
+  decksButtonIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   decksButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "800",
-    textTransform: "uppercase",
+    color: "#f1f5f9",
+    fontSize: 17,
+    fontWeight: "900",
+    letterSpacing: -0.3,
+    marginBottom: 3,
+  },
+  decksButtonSub: {
+    color: "#64748b",
+    fontSize: 12,
+    fontWeight: "500",
   },
 
+  // ── Mode cards ────────────────────────────────────────────────────────────
   modeCard: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
@@ -213,7 +365,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   modeCardDesc: {
-    color: "#475569",
+    color: "#64748b",
     fontSize: 12,
     fontWeight: "500",
     lineHeight: 18,
@@ -231,30 +383,50 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
-  // Dev Tools styles
-  devBox: {
-    marginTop: 32,
-    padding: 16,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderRadius: 16,
+  // ── Dev drawer ────────────────────────────────────────────────────────────
+  devDrawerContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: -20,
+    right: -20,
+  },
+  devArrowTab: {
+    position: "absolute",
+    top: 0,
+    alignSelf: "center",
+    zIndex: 10,
+  },
+  devArrowTabInner: {
+    backgroundColor: "#1c0808",
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
-  },
-  devTitle: {
-    color: "#ef4444",
-    fontWeight: "900",
-    textTransform: "uppercase",
-    fontSize: 12,
-    marginBottom: 12,
-    letterSpacing: 1,
-  },
-  devRow: { flexDirection: "row", gap: 10 },
-  devBtn: {
-    flex: 1,
-    backgroundColor: "#ef4444",
-    paddingVertical: 12,
-    borderRadius: 10,
+    borderColor: "rgba(239,68,68,0.4)",
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    paddingHorizontal: 22,
+    paddingTop: 10,
+    paddingBottom: 8,
     alignItems: "center",
+    minWidth: 72,
+    // Taller / more prominent when closed
+    marginTop: -48,
   },
-  devBtnText: { color: "#ffffff", fontWeight: "800" },
+  devArrowTabInnerOpen: {
+    // Smaller tab when drawer is open
+    marginTop: -32,
+    paddingTop: 7,
+    paddingBottom: 6,
+    paddingHorizontal: 16,
+  },
+  devArrowTabLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  devArrowTabText: {
+    color: "#ef4444",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
 });
