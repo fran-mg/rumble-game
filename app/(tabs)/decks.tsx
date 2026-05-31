@@ -11,19 +11,17 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAppTheme } from "../../constants/Colors";
-import { useDeckStore } from "../../stores/useDeckStore";
-import { generateDeckViaAI } from "../../utils/aiGenerator";
+import { useDeckStore } from "../stores/useDeckStore";
+import { generateDeckViaAI } from "../utils/aiGenerator";
 import {
   CloudDeckIndexItem,
   downloadAndImportDeck,
   fetchCloudDecksIndex,
-} from "../../utils/cloudDecks";
-import db from "../../utils/database";
-import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
+} from "../utils/cloudDecks";
+import db from "../utils/database";
+import { seedStarterDecksIfEmpty } from "../utils/deckImporter";
 
 export default function DecksScreen() {
-  const theme = useAppTheme();
   const { decks, loadDecks, deleteDeck } = useDeckStore();
 
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -186,21 +184,19 @@ export default function DecksScreen() {
       : decks.filter((d) => d.category.toLowerCase() === activeTab);
 
   return (
-    <SafeAreaView className={`flex-1 ${theme.background} p-4`}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 p-4">
       {/* AI Forge Control Box */}
-      <View className={`${theme.surface} border p-4 rounded-2xl mb-3`}>
-        <Text
-          className={`${theme.textPrimary} font-black text-sm uppercase tracking-wider mb-2`}
-        >
+      <View className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-2xl mb-3">
+        <Text className="text-zinc-900 dark:text-zinc-50 font-black text-sm uppercase tracking-wider mb-2">
           AI Deck Forge (Groq Network)
         </Text>
         <View className="flex-row gap-2">
           <TextInput
             placeholder="Theme prompt (e.g., Star Wars Planets)"
-            placeholderTextColor={theme.isDark ? "#64748B" : "#94A3B8"}
+            placeholderTextColor="#64748B" // Tailwind text-slate-500 equivalent
             value={aiPrompt}
             onChangeText={setAiPrompt}
-            className={`flex-1 ${theme.inputBg} border rounded-xl px-4 ${theme.textPrimary} font-medium`}
+            className="flex-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 text-zinc-900 dark:text-zinc-50 font-medium"
           />
           <TouchableOpacity
             onPress={triggerAIGeneration}
@@ -244,12 +240,14 @@ export default function DecksScreen() {
               className={`px-4 py-2 rounded-full border ${
                 activeTab === cat
                   ? "bg-blue-600 border-blue-500"
-                  : theme.surface
+                  : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
               }`}
             >
               <Text
                 className={`${
-                  activeTab === cat ? "text-white" : theme.textSecondary
+                  activeTab === cat
+                    ? "text-white"
+                    : "text-zinc-500 dark:text-zinc-400"
                 } text-xs font-bold capitalize`}
               >
                 {cat}
@@ -261,13 +259,10 @@ export default function DecksScreen() {
 
       {/* Main Responsive Selection Grid */}
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        <Text
-          className={`${theme.textSecondary} text-xs font-black uppercase tracking-widest mb-3 px-1`}
-        >
+        <Text className="text-zinc-500 dark:text-zinc-400 text-xs font-black uppercase tracking-widest mb-3 px-1">
           Available Track Packs
         </Text>
         {filteredDecks.map((deck) => {
-          // Dynamic Icon matching from lucide-react-native
           const deckIconKey = (deck as any).icon;
           const DeckIcon =
             (LucideIcons as any)[deckIconKey] || LucideIcons.Layers;
@@ -276,22 +271,20 @@ export default function DecksScreen() {
           return (
             <View
               key={deck.id}
-              className={`border p-4 rounded-2xl mb-3 flex-row justify-between items-center ${theme.surface}`}
+              className="border p-4 rounded-2xl mb-3 flex-row justify-between items-center bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
             >
               <View className="flex-1 flex-row items-center gap-4">
                 <View
-                  className={`p-3 rounded-xl`}
+                  className="p-3 rounded-xl"
                   style={{ backgroundColor: `${deckColor}20` }}
                 >
                   <DeckIcon color={deckColor} size={20} />
                 </View>
                 <View className="flex-1">
-                  <Text className={`${theme.textPrimary} font-black text-base`}>
+                  <Text className="text-zinc-900 dark:text-zinc-50 font-black text-base">
                     {deck.name}
                   </Text>
-                  <Text
-                    className={`${theme.textSecondary} text-xs font-medium mt-0.5`}
-                  >
+                  <Text className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mt-0.5">
                     {deck.category} • {deck.card_count} objects
                   </Text>
                 </View>
@@ -300,9 +293,12 @@ export default function DecksScreen() {
               <View className="flex-row items-center gap-3 pl-2">
                 <TouchableOpacity
                   onPress={() => openDeckEditor(deck)}
-                  className={`p-2 ${theme.inputBg} rounded-lg`}
+                  className="p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
                 >
-                  <LucideIcons.Edit3 color={theme.iconColor} size={16} />
+                  <LucideIcons.Edit3
+                    className="text-zinc-500 dark:text-zinc-400"
+                    size={16}
+                  />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => deleteDeck(deck.id)}
@@ -324,35 +320,38 @@ export default function DecksScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <SafeAreaView className={`flex-1 ${theme.background} p-4`}>
+        <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 p-4">
           <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className={`${theme.textPrimary} font-black text-2xl`}>
+              <Text className="text-zinc-900 dark:text-zinc-50 font-black text-2xl">
                 Community Decks
               </Text>
-              <Text className={`${theme.textSecondary} text-sm mt-1`}>
+              <Text className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
                 Download free packs curated by the community.
               </Text>
             </View>
             <TouchableOpacity
               onPress={() => setIsCloudModalVisible(false)}
-              className={`p-2 ${theme.inputBg} rounded-full`}
+              className="p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full"
             >
-              <LucideIcons.X color={theme.iconColor} size={24} />
+              <LucideIcons.X
+                className="text-zinc-500 dark:text-zinc-400"
+                size={24}
+              />
             </TouchableOpacity>
           </View>
 
           {isFetchingCloud ? (
             <View className="flex-1 justify-center items-center">
               <ActivityIndicator size="large" color="#3B82F6" />
-              <Text className={`${theme.textSecondary} mt-4 font-bold`}>
+              <Text className="text-zinc-500 dark:text-zinc-400 mt-4 font-bold">
                 Fetching repository...
               </Text>
             </View>
           ) : (
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
               {cloudDecks.length === 0 ? (
-                <Text className={`${theme.textSecondary} text-center mt-10`}>
+                <Text className="text-zinc-500 dark:text-zinc-400 text-center mt-10">
                   No community decks found in the repository.
                 </Text>
               ) : (
@@ -367,7 +366,7 @@ export default function DecksScreen() {
                   return (
                     <View
                       key={cloudDeck.id}
-                      className={`border p-4 rounded-2xl mb-4 ${theme.surface}`}
+                      className="border p-4 rounded-2xl mb-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
                     >
                       <View className="flex-row gap-4 mb-3">
                         <View
@@ -377,19 +376,15 @@ export default function DecksScreen() {
                           <CloudIcon color={cloudDeck.color} size={22} />
                         </View>
                         <View className="flex-1">
-                          <Text
-                            className={`${theme.textPrimary} font-black text-lg`}
-                          >
+                          <Text className="text-zinc-900 dark:text-zinc-50 font-black text-lg">
                             {cloudDeck.name}
                           </Text>
-                          <Text
-                            className={`${theme.textSecondary} text-xs font-bold`}
-                          >
+                          <Text className="text-zinc-500 dark:text-zinc-400 text-xs font-bold">
                             {cloudDeck.category} • {cloudDeck.cardCount} cards
                           </Text>
                         </View>
                       </View>
-                      <Text className={`${theme.textSecondary} text-sm mb-4`}>
+                      <Text className="text-zinc-500 dark:text-zinc-400 text-sm mb-4">
                         {cloudDeck.description}
                       </Text>
 
@@ -439,25 +434,26 @@ export default function DecksScreen() {
       {/* ──────────────────────────────────────────────────────────────────────── */}
       <Modal visible={editingDeck !== null} animationType="slide" transparent>
         <SafeAreaView className="flex-1 bg-black/60 p-4 justify-end">
-          <View
-            className={`${theme.surface} border rounded-3xl p-5 h-[80%] shadow-2xl`}
-          >
-            <View className="flex-row justify-between items-center border-b border-slate-800/20 pb-3 mb-4">
-              <Text className={`${theme.textPrimary} font-black text-lg`}>
+          <View className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 h-[80%] shadow-2xl">
+            <View className="flex-row justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4">
+              <Text className="text-zinc-900 dark:text-zinc-50 font-black text-lg">
                 {editingDeck?.name}
               </Text>
               <TouchableOpacity onPress={() => setEditingDeck(null)}>
-                <LucideIcons.X color={theme.iconColor} size={24} />
+                <LucideIcons.X
+                  className="text-zinc-500 dark:text-zinc-400"
+                  size={24}
+                />
               </TouchableOpacity>
             </View>
 
             <View className="flex-row gap-2 mb-4">
               <TextInput
                 placeholder="Append custom target label string"
-                placeholderTextColor={theme.isDark ? "#64748B" : "#94A3B8"}
+                placeholderTextColor="#64748B"
                 value={newWord}
                 onChangeText={setNewWord}
-                className={`flex-1 ${theme.inputBg} border rounded-xl px-4 ${theme.textPrimary} font-medium`}
+                className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 text-zinc-900 dark:text-zinc-50 font-medium"
               />
               <TouchableOpacity
                 onPress={handleAddCustomCard}
@@ -471,9 +467,9 @@ export default function DecksScreen() {
               {deckCards.map((card) => (
                 <View
                   key={card.id}
-                  className={`${theme.inputBg} border p-3 rounded-xl mb-2 flex-row justify-between items-center`}
+                  className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-3 rounded-xl mb-2 flex-row justify-between items-center"
                 >
-                  <Text className={`${theme.textPrimary} font-bold`}>
+                  <Text className="text-zinc-900 dark:text-zinc-50 font-bold">
                     {card.word}
                   </Text>
                   <TouchableOpacity onPress={() => handleDeleteCard(card.id)}>
