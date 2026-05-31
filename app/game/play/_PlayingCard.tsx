@@ -1,4 +1,3 @@
-// app/game/play/_PlayingCard.tsx
 import { LinearGradient } from "expo-linear-gradient";
 import * as LucideIcons from "lucide-react-native";
 import React, {
