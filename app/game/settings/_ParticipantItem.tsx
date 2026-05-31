@@ -47,16 +47,19 @@ export default function ParticipantItem({
         style={[
           styles.row,
           {
+            // Solid backgrounds so nothing bleeds through during drag
+            backgroundColor: isActive
+              ? "#1e293b"
+              : isEditing
+                ? "#151f30"
+                : "#0f1a28",
             borderColor: isActive
               ? item.color
               : isEditing
                 ? `${item.color}88`
                 : "rgba(255,255,255,0.07)",
             shadowColor: isActive ? item.color : "transparent",
-            shadowOpacity: isActive ? 0.5 : 0,
-            backgroundColor: isEditing
-              ? "rgba(255,255,255,0.04)"
-              : "rgba(255,255,255,0.02)",
+            shadowOpacity: isActive ? 0.6 : 0,
           },
         ]}
       >

@@ -83,6 +83,34 @@ export default function ParticipantSelector({
   };
 
   const handleAdd = () => {
+    // If we're currently editing a brand-new unnamed item, force naming it first
+    if (isNewItemRef.current && editingId !== null) {
+      Alert.alert(
+        "Name required",
+        `Please name the current ${label} before adding another.`,
+      );
+      return;
+    }
+
+    // If editing an existing item with no name typed yet, block too
+    if (editingId !== null && editName.trim() === "") {
+      Alert.alert(
+        "Name required",
+        `Please finish naming the current ${label} before adding another.`,
+      );
+      return;
+    }
+
+    // If mid-edit of an existing item, confirm it first before adding new
+    if (editingId !== null) {
+      const trimmed = editName.trim();
+      if (trimmed) {
+        updateParticipant(editingId, trimmed);
+      }
+      setEditingId(null);
+      isNewItemRef.current = false;
+    }
+
     addParticipant(playStyle);
     setTimeout(() => {
       const latest = useRosterStore.getState().participants.at(-1);
