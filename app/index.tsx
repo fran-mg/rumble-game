@@ -11,6 +11,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as LucideIcons from "lucide-react-native";
 import { getAllModes, getModeTheme } from "../utils/_modeTheme";
 
+const isProductionTest = true; // false = expose dev tools, true = show user views only
+
 export default function HomeScreen() {
   const router = useRouter();
   const modes = getAllModes();
@@ -103,7 +105,7 @@ export default function HomeScreen() {
         })}
 
         {/* --- DEV TOOLS (ONLY SHOWS IN EXPO GO / LOCAL DEV) --- */}
-        {__DEV__ && (
+        {__DEV__ && !isProductionTest && (
           <View style={styles.devBox}>
             <Text style={styles.devTitle}>Developer Tools</Text>
             <View style={styles.devRow}>
