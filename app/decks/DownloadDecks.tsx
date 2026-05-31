@@ -90,7 +90,7 @@ export default function CloudDecksModal({
             style={styles.closeBtn}
             activeOpacity={0.7}
           >
-            <LucideIcons.X color="#94a3b8" size={20} strokeWidth={2.5} />
+            <LucideIcons.X color="#cbd5e1" size={20} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -109,7 +109,7 @@ export default function CloudDecksModal({
             {cloudDecks.length === 0 ? (
               <View style={styles.emptyState}>
                 <LucideIcons.CloudOff
-                  color="#334155"
+                  color="#475569"
                   size={40}
                   strokeWidth={1.5}
                 />
@@ -135,13 +135,13 @@ export default function CloudDecksModal({
                           styles.deckIcon,
                           {
                             backgroundColor: `${cloudDeck.color}22`,
-                            borderColor: `${cloudDeck.color}44`,
+                            borderColor: `${cloudDeck.color}55`,
                           },
                         ]}
                       >
                         <CloudIcon
                           color={cloudDeck.color}
-                          size={22}
+                          size={24}
                           strokeWidth={2}
                         />
                       </View>
@@ -153,7 +153,8 @@ export default function CloudDecksModal({
                           </Text>
                           <View style={styles.deckMetaDot} />
                           <Text style={styles.deckCardCount}>
-                            {cloudDeck.cardCount} cards
+                            {cloudDeck.cardCount}{" "}
+                            {cloudDeck.cardCount === 1 ? "card" : "cards"}
                           </Text>
                         </View>
                       </View>
@@ -174,7 +175,7 @@ export default function CloudDecksModal({
                     {/* Description */}
                     <Text style={styles.deckDesc}>{cloudDeck.description}</Text>
 
-                    {/* Download button — only when not installed */}
+                    {/* Download button */}
                     {!isInstalled && (
                       <TouchableOpacity
                         onPress={() => handleDownload(cloudDeck)}
@@ -223,6 +224,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#020617",
   },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   eyebrow: {
-    color: "#334155",
+    color: "#64748b",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 2.5,
@@ -249,15 +252,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     marginHorizontal: 20,
     marginBottom: 8,
   },
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loadingText: {
-    color: "#475569",
+    color: "#94a3b8",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -282,7 +285,7 @@ const styles = StyleSheet.create({
   deckCard: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255,255,255,0.09)",
     borderRadius: 20,
     padding: 16,
     overflow: "hidden",
@@ -304,8 +307,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   deckIcon: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
@@ -325,7 +328,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   deckCategory: {
-    color: "#94a3b8",
+    color: "#cbd5e1",
     fontSize: 11,
     fontWeight: "700",
     textTransform: "capitalize",
@@ -334,10 +337,10 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#334155",
+    backgroundColor: "#475569",
   },
   deckCardCount: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 11,
     fontWeight: "600",
   },
@@ -345,9 +348,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(16,185,129,0.12)",
+    backgroundColor: "rgba(16,185,129,0.14)",
     borderWidth: 1,
-    borderColor: "rgba(16,185,129,0.3)",
+    borderColor: "rgba(16,185,129,0.35)",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
@@ -359,7 +362,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   deckDesc: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 12,
     fontWeight: "500",
     lineHeight: 18,
@@ -373,8 +376,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "rgba(99,102,241,0.45)",
-    backgroundColor: "rgba(99,102,241,0.08)",
+    borderColor: "rgba(99,102,241,0.5)",
+    backgroundColor: "rgba(99,102,241,0.1)",
   },
   downloadBtnLoading: {
     opacity: 0.6,
@@ -391,8 +394,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 2,
-    opacity: 0.55,
+    height: 3,
+    opacity: 0.65,
   },
   emptyState: {
     alignItems: "center",
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   emptyText: {
-    color: "#334155",
+    color: "#64748b",
     fontSize: 13,
     fontWeight: "700",
   },

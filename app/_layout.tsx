@@ -30,7 +30,10 @@ export default function RootLayout() {
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
-          <Stack.Screen name="decks" options={{ presentation: "modal" }} />
+          <Stack.Screen
+            name="decks/index"
+            options={{ presentation: "modal" }}
+          />
 
           {/* Dev routes will be accessible but hidden from normal UI */}
           <Stack.Screen name="(dev)" options={{ presentation: "modal" }} />

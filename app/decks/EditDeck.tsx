@@ -13,6 +13,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import db from "../../utils/database";
 
+// Helper to reliably map icon names
+const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
+  if (!iconName) return Fallback;
+  const pascal = iconName.replace(/(^\w|-\w)/g, (clear) =>
+    clear.replace(/-/, "").toUpperCase(),
+  );
+  return (
+    (LucideIcons as any)[iconName] || (LucideIcons as any)[pascal] || Fallback
+  );
+};
+
 interface EditDeckModalProps {
   deck: any | null;
   onClose: () => void;
@@ -85,8 +96,7 @@ export default function EditDeckModal({
   };
 
   const deckColor = deck?.color || "#3B82F6";
-  const deckIconKey = deck?.icon;
-  const DeckIcon = (LucideIcons as any)[deckIconKey] || LucideIcons.Layers;
+  const DeckIcon = getLucideIcon(deck?.icon, LucideIcons.Layers);
 
   return (
     <Modal visible={deck !== null} animationType="slide" transparent>
@@ -98,7 +108,7 @@ export default function EditDeckModal({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.sectionLabelRow}>
-              <LucideIcons.Pencil size={11} color="#64748b" strokeWidth={2.5} />
+              <LucideIcons.Pencil size={11} color="#94a3b8" strokeWidth={2.5} />
               <Text style={styles.sectionLabel}>Editing Deck</Text>
             </View>
             <View style={styles.headerBottom}>
@@ -120,7 +130,7 @@ export default function EditDeckModal({
                 style={styles.closeBtn}
                 activeOpacity={0.7}
               >
-                <LucideIcons.X color="#94a3b8" size={18} strokeWidth={2.5} />
+                <LucideIcons.X color="#cbd5e1" size={18} strokeWidth={2.5} />
               </TouchableOpacity>
             </View>
           </View>
@@ -131,7 +141,7 @@ export default function EditDeckModal({
           <View style={styles.inputRow}>
             <TextInput
               placeholder="Type a new word to add..."
-              placeholderTextColor="#475569"
+              placeholderTextColor="#64748b"
               value={newWord}
               onChangeText={setNewWord}
               style={styles.input}
@@ -152,7 +162,7 @@ export default function EditDeckModal({
           <View style={styles.countRow}>
             <LucideIcons.LayoutList
               size={11}
-              color="#475569"
+              color="#94a3b8"
               strokeWidth={2.5}
             />
             <Text style={styles.countText}>
@@ -170,7 +180,7 @@ export default function EditDeckModal({
             {cards.length === 0 && (
               <View style={styles.emptyState}>
                 <LucideIcons.PackageOpen
-                  color="#1e293b"
+                  color="#64748b"
                   size={32}
                   strokeWidth={1.5}
                 />
@@ -240,7 +250,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionLabel: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 2,
@@ -271,16 +281,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
 
   divider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(255,255,255,0.12)",
     marginVertical: 16,
   },
 
@@ -298,7 +308,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 14,
     paddingHorizontal: 14,
-    color: "#e2e8f0",
+    color: "#ffffff",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -313,7 +323,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addBtnDisabled: {
-    opacity: 0.3,
+    opacity: 0.5,
   },
 
   // ── Count row ─────────────────────────────────────────────────────────────
@@ -324,7 +334,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   countText: {
-    color: "#475569",
+    color: "#94a3b8",
     fontSize: 10,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -341,9 +351,9 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 13,
     paddingHorizontal: 14,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
+    borderColor: "rgba(255,255,255,0.15)",
     borderRadius: 12,
     marginBottom: 6,
   },
@@ -356,7 +366,7 @@ const styles = StyleSheet.create({
   },
   cardWord: {
     flex: 1,
-    color: "#cbd5e1",
+    color: "#f1f5f9",
     fontSize: 14,
     fontWeight: "700",
   },
@@ -378,7 +388,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    color: "#334155",
+    color: "#94a3b8",
     fontSize: 13,
     fontWeight: "600",
   },

@@ -31,7 +31,6 @@ export default function DecksScreen() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const [editingDeck, setEditingDeck] = useState<any | null>(null);
-
   const [isCloudModalVisible, setIsCloudModalVisible] = useState(false);
 
   useEffect(() => {
@@ -79,7 +78,7 @@ export default function DecksScreen() {
           activeOpacity={0.7}
         >
           <LucideIcons.ChevronLeft
-            color="#94a3b8"
+            color="#cbd5e1"
             size={20}
             strokeWidth={2.5}
           />
@@ -94,7 +93,7 @@ export default function DecksScreen() {
           activeOpacity={0.75}
         >
           <LucideIcons.CloudDownload
-            color="#94a3b8"
+            color="#cbd5e1"
             size={18}
             strokeWidth={2}
           />
@@ -122,7 +121,7 @@ export default function DecksScreen() {
           <View style={styles.aiInputRow}>
             <TextInput
               placeholder="e.g. 90s Cartoons, Space Exploration..."
-              placeholderTextColor="#475569"
+              placeholderTextColor="#64748b"
               value={aiPrompt}
               onChangeText={setAiPrompt}
               style={styles.aiInput}
@@ -168,7 +167,7 @@ export default function DecksScreen() {
               <Text
                 style={[
                   styles.categoryChipText,
-                  { color: activeTab === cat ? "#e2e8f0" : "#64748b" },
+                  { color: activeTab === cat ? "#f1f5f9" : "#94a3b8" },
                 ]}
               >
                 {cat}
@@ -179,7 +178,7 @@ export default function DecksScreen() {
 
         {/* ── Section label ── */}
         <View style={styles.sectionLabelRow}>
-          <LucideIcons.Layers size={11} color="#64748b" strokeWidth={2.5} />
+          <LucideIcons.Layers size={11} color="#94a3b8" strokeWidth={2.5} />
           <Text style={styles.sectionLabel}>
             {filteredDecks.length}{" "}
             {filteredDecks.length === 1 ? "pack" : "packs"} available
@@ -198,7 +197,7 @@ export default function DecksScreen() {
               <View style={styles.cardShine} pointerEvents="none" />
 
               <View style={styles.deckCardInner}>
-                {/* Icon — full deck colour */}
+                {/* Icon with deck colour — matching DownloadDecks style */}
                 <View
                   style={[
                     styles.deckIcon,
@@ -208,7 +207,7 @@ export default function DecksScreen() {
                     },
                   ]}
                 >
-                  <DeckIcon color={deckColor} size={22} strokeWidth={2} />
+                  <DeckIcon color={deckColor} size={24} strokeWidth={2} />
                 </View>
 
                 {/* Info */}
@@ -218,7 +217,8 @@ export default function DecksScreen() {
                     <Text style={styles.deckCategory}>{deck.category}</Text>
                     <View style={styles.deckMetaDot} />
                     <Text style={styles.deckCardCount}>
-                      {deck.card_count} cards
+                      {deck.card_count}{" "}
+                      {deck.card_count === 1 ? "card" : "cards"}
                     </Text>
                   </View>
                 </View>
@@ -231,7 +231,7 @@ export default function DecksScreen() {
                     activeOpacity={0.7}
                   >
                     <LucideIcons.Pencil
-                      color="#94a3b8"
+                      color="#cbd5e1"
                       size={15}
                       strokeWidth={2}
                     />
@@ -261,7 +261,7 @@ export default function DecksScreen() {
         {filteredDecks.length === 0 && (
           <View style={styles.emptyState}>
             <LucideIcons.PackageOpen
-              color="#334155"
+              color="#475569"
               size={40}
               strokeWidth={1.5}
             />
@@ -305,14 +305,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
   pageEyebrow: {
-    color: "#334155",
+    color: "#64748b",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 2.5,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
+    borderColor: "rgba(255,255,255,0.09)",
     borderRadius: 24,
     padding: 20,
     overflow: "hidden",
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionLabel: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 2,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
 
   // ── AI Forge ─────────────────────────────────────────────────────────────
   aiSubtitle: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 12,
     fontWeight: "500",
     lineHeight: 18,
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
   aiInput: {
     flex: 1,
     height: 48,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.12)",
     borderRadius: 14,
     paddingHorizontal: 14,
-    color: "#e2e8f0",
+    color: "#f1f5f9",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -419,12 +419,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   categoryChipActive: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.22)",
   },
   categoryChipInactive: {
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderColor: "rgba(255,255,255,0.09)",
   },
   categoryChipText: {
     fontSize: 12,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   deckCard: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(255,255,255,0.09)",
     borderRadius: 20,
     overflow: "hidden",
   },
@@ -448,8 +448,8 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   deckIcon: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     letterSpacing: -0.2,
-    marginBottom: 5,
+    marginBottom: 6,
   },
   deckMetaRow: {
     flexDirection: "row",
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   deckCategory: {
-    color: "#94a3b8",
+    color: "#cbd5e1",
     fontSize: 11,
     fontWeight: "700",
     textTransform: "capitalize",
@@ -481,10 +481,10 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#334155",
+    backgroundColor: "#475569",
   },
   deckCardCount: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 11,
     fontWeight: "600",
   },
@@ -496,19 +496,19 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
   deckActionBtnDelete: {
-    backgroundColor: "rgba(239,68,68,0.1)",
-    borderColor: "rgba(239,68,68,0.25)",
+    backgroundColor: "rgba(239,68,68,0.12)",
+    borderColor: "rgba(239,68,68,0.3)",
   },
   deckColorStrip: {
-    height: 2,
-    opacity: 0.6,
+    height: 3,
+    opacity: 0.7,
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   emptyStateText: {
-    color: "#334155",
+    color: "#64748b",
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.3,
