@@ -21,7 +21,6 @@ import {
 } from "../../utils/cloudDecks";
 import db from "../../utils/database";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
-import { injectExtendedSampleDecks } from "../../utils/sampleDeckInjector";
 
 export default function DecksScreen() {
   const theme = useAppTheme();
@@ -52,18 +51,6 @@ export default function DecksScreen() {
   const initDeckFlow = async () => {
     await seedStarterDecksIfEmpty();
     await loadDecks();
-  };
-
-  const handleAddSampleData = async () => {
-    setIsInjecting(true);
-    try {
-      await injectExtendedSampleDecks(decks.length, loadDecks);
-    } catch (err) {
-      Alert.alert("Error", "Failed to populate test decks.");
-      console.error(err);
-    } finally {
-      setIsInjecting(false);
-    }
   };
 
   const triggerAIGeneration = async () => {
@@ -230,25 +217,6 @@ export default function DecksScreen() {
       </View>
 
       <View className="flex-row gap-2 mb-6">
-        {/* Local Seeding Control Box */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleAddSampleData}
-          disabled={isInjecting}
-          className="flex-1 bg-blue-600 rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-lg shadow-blue-500/20"
-        >
-          {isInjecting ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <>
-              <LucideIcons.PlusCircle color="white" size={16} />
-              <Text className="text-white font-extrabold text-xs tracking-tight uppercase">
-                Sample Data
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-
         {/* Cloud Repo Browser Button */}
         <TouchableOpacity
           activeOpacity={0.8}
