@@ -15,10 +15,7 @@ import {
 import { initDatabase } from "../utils/database";
 import "./global.css";
 
-configureReanimatedLogger({
-  level: ReanimatedLogLevel.error,
-  strict: false,
-});
+configureReanimatedLogger({ level: ReanimatedLogLevel.error, strict: false });
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -32,8 +29,13 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          {/* Explicitly defining this stabilizes its navigation context */}
+          <Stack.Screen name="index" />
+          <Stack.Screen name="decks" options={{ presentation: "modal" }} />
+
+          {/* Dev routes will be accessible but hidden from normal UI */}
+          <Stack.Screen name="(dev)" options={{ presentation: "modal" }} />
+
+          {/* Game Routes */}
           <Stack.Screen name="game/settings/index" />
           <Stack.Screen
             name="game/play/index"
@@ -47,7 +49,6 @@ export default function RootLayout() {
             name="game/match-summary"
             options={{ gestureEnabled: false }}
           />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
         </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>
