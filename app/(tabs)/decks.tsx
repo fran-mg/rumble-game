@@ -14,6 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppTheme } from "../../constants/Colors";
 import { useDeckStore } from "../../stores/useDeckStore";
 import { generateDeckViaAI } from "../../utils/aiGenerator";
+import {
+  CloudDeckIndexItem,
+  downloadAndImportDeck,
+  fetchCloudDecksIndex,
+} from "../../utils/cloudDecks";
 import db from "../../utils/database";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
 import { injectExtendedSampleDecks } from "../../utils/sampleDeckInjector";
@@ -21,14 +26,24 @@ import { injectExtendedSampleDecks } from "../../utils/sampleDeckInjector";
 export default function DecksScreen() {
   const theme = useAppTheme();
   const { decks, loadDecks, deleteDeck } = useDeckStore();
+
   const [activeTab, setActiveTab] = useState<string>("all");
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isInjecting, setIsInjecting] = useState<boolean>(false);
 
+  // Deck Editor State
   const [editingDeck, setEditingDeck] = useState<any | null>(null);
   const [deckCards, setDeckCards] = useState<any[]>([]);
   const [newWord, setNewWord] = useState<string>("");
+
+  // Cloud Decks State
+  const [isCloudModalVisible, setIsCloudModalVisible] = useState(false);
+  const [cloudDecks, setCloudDecks] = useState<CloudDeckIndexItem[]>([]);
+  const [isFetchingCloud, setIsFetchingCloud] = useState(false);
+  const [downloadingDeckId, setDownloadingDeckId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     initDeckFlow();
@@ -72,6 +87,49 @@ export default function DecksScreen() {
       Alert.alert("Generation Halt", result.error || "Review network logs.");
     }
   };
+
+  // --- CLOUD DECK LOGIC ---
+  const openCloudBrowser = async () => {
+    setIsCloudModalVisible(true);
+    setIsFetchingCloud(true);
+    try {
+      const items = await fetchCloudDecksIndex();
+      setCloudDecks(items);
+    } catch (err) {
+      Alert.alert(
+        "Connection Error",
+        "Failed to reach the community repository.",
+      );
+    } finally {
+      setIsFetchingCloud(false);
+    }
+  };
+
+  const handleDownloadCloudDeck = async (cloudDeck: CloudDeckIndexItem) => {
+    // Check if a deck with this name already exists locally to prevent duplicates
+    if (decks.some((d) => d.name === cloudDeck.name)) {
+      Alert.alert(
+        "Already Installed",
+        "You already have a deck with this name.",
+      );
+      return;
+    }
+
+    setDownloadingDeckId(cloudDeck.id);
+    const success = await downloadAndImportDeck(cloudDeck);
+    setDownloadingDeckId(null);
+
+    if (success) {
+      await loadDecks();
+      Alert.alert("Success", `${cloudDeck.name} was successfully downloaded!`);
+    } else {
+      Alert.alert(
+        "Download Failed",
+        "Something went wrong fetching the deck data.",
+      );
+    }
+  };
+  // ------------------------
 
   const openDeckEditor = async (deck: any) => {
     if (!db) return;
@@ -171,24 +229,38 @@ export default function DecksScreen() {
         </View>
       </View>
 
-      {/* Local Seeding Control Box */}
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={handleAddSampleData}
-        disabled={isInjecting}
-        className="bg-blue-600 rounded-2xl py-3.5 items-center justify-center mb-6 flex-row gap-2 shadow-lg shadow-blue-500/20"
-      >
-        {isInjecting ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <>
-            <LucideIcons.PlusCircle color="white" size={18} />
-            <Text className="text-white font-extrabold text-sm tracking-tight uppercase">
-              Inject Extended Sample Decks
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
+      <View className="flex-row gap-2 mb-6">
+        {/* Local Seeding Control Box */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleAddSampleData}
+          disabled={isInjecting}
+          className="flex-1 bg-blue-600 rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-lg shadow-blue-500/20"
+        >
+          {isInjecting ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <>
+              <LucideIcons.PlusCircle color="white" size={16} />
+              <Text className="text-white font-extrabold text-xs tracking-tight uppercase">
+                Sample Data
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Cloud Repo Browser Button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={openCloudBrowser}
+          className="flex-1 bg-emerald-600 rounded-2xl py-3.5 items-center justify-center flex-row gap-2 shadow-lg shadow-emerald-500/20"
+        >
+          <LucideIcons.CloudDownload color="white" size={16} />
+          <Text className="text-white font-extrabold text-xs tracking-tight uppercase">
+            Browse Online
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Category Navigation Bar */}
       <View className="mb-4">
@@ -201,10 +273,16 @@ export default function DecksScreen() {
             <TouchableOpacity
               key={cat}
               onPress={() => setActiveTab(cat)}
-              className={`px-4 py-2 rounded-full border ${activeTab === cat ? "bg-blue-600 border-blue-500" : theme.surface}`}
+              className={`px-4 py-2 rounded-full border ${
+                activeTab === cat
+                  ? "bg-blue-600 border-blue-500"
+                  : theme.surface
+              }`}
             >
               <Text
-                className={`${activeTab === cat ? "text-white" : theme.textSecondary} text-xs font-bold capitalize`}
+                className={`${
+                  activeTab === cat ? "text-white" : theme.textSecondary
+                } text-xs font-bold capitalize`}
               >
                 {cat}
               </Text>
@@ -221,14 +299,23 @@ export default function DecksScreen() {
           Available Track Packs
         </Text>
         {filteredDecks.map((deck) => {
+          // Dynamic Icon matching from lucide-react-native
+          const deckIconKey = (deck as any).icon;
+          const DeckIcon =
+            (LucideIcons as any)[deckIconKey] || LucideIcons.Layers;
+          const deckColor = (deck as any).color || "#3B82F6";
+
           return (
             <View
               key={deck.id}
               className={`border p-4 rounded-2xl mb-3 flex-row justify-between items-center ${theme.surface}`}
             >
               <View className="flex-1 flex-row items-center gap-4">
-                <View className={`p-3 rounded-xl ${theme.inputBg}`}>
-                  <LucideIcons.Layers color={theme.iconColor} size={20} />
+                <View
+                  className={`p-3 rounded-xl`}
+                  style={{ backgroundColor: `${deckColor}20` }}
+                >
+                  <DeckIcon color={deckColor} size={20} />
                 </View>
                 <View className="flex-1">
                   <Text className={`${theme.textPrimary} font-black text-base`}>
@@ -249,7 +336,6 @@ export default function DecksScreen() {
                 >
                   <LucideIcons.Edit3 color={theme.iconColor} size={16} />
                 </TouchableOpacity>
-                {/* Notice the click logic simplifies drastically to just execute deletion */}
                 <TouchableOpacity
                   onPress={() => deleteDeck(deck.id)}
                   className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg"
@@ -261,13 +347,134 @@ export default function DecksScreen() {
           );
         })}
       </ScrollView>
-      {/* Roster Expansion Matrix Drawer Overlay */}
+
+      {/* ──────────────────────────────────────────────────────────────────────── */}
+      {/* MODAL: Cloud Community Packs Browser                                     */}
+      {/* ──────────────────────────────────────────────────────────────────────── */}
+      <Modal
+        visible={isCloudModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView className={`flex-1 ${theme.background} p-4`}>
+          <View className="flex-row justify-between items-center mb-6">
+            <View>
+              <Text className={`${theme.textPrimary} font-black text-2xl`}>
+                Community Decks
+              </Text>
+              <Text className={`${theme.textSecondary} text-sm mt-1`}>
+                Download free packs curated by the community.
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsCloudModalVisible(false)}
+              className={`p-2 ${theme.inputBg} rounded-full`}
+            >
+              <LucideIcons.X color={theme.iconColor} size={24} />
+            </TouchableOpacity>
+          </View>
+
+          {isFetchingCloud ? (
+            <View className="flex-1 justify-center items-center">
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text className={`${theme.textSecondary} mt-4 font-bold`}>
+                Fetching repository...
+              </Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+              {cloudDecks.length === 0 ? (
+                <Text className={`${theme.textSecondary} text-center mt-10`}>
+                  No community decks found in the repository.
+                </Text>
+              ) : (
+                cloudDecks.map((cloudDeck) => {
+                  const isInstalled = decks.some(
+                    (d) => d.name === cloudDeck.name,
+                  );
+                  const isDownloading = downloadingDeckId === cloudDeck.id;
+                  const CloudIcon =
+                    (LucideIcons as any)[cloudDeck.icon] || LucideIcons.Cloud;
+
+                  return (
+                    <View
+                      key={cloudDeck.id}
+                      className={`border p-4 rounded-2xl mb-4 ${theme.surface}`}
+                    >
+                      <View className="flex-row gap-4 mb-3">
+                        <View
+                          className="p-3 rounded-xl h-12 w-12 items-center justify-center"
+                          style={{ backgroundColor: `${cloudDeck.color}20` }}
+                        >
+                          <CloudIcon color={cloudDeck.color} size={22} />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className={`${theme.textPrimary} font-black text-lg`}
+                          >
+                            {cloudDeck.name}
+                          </Text>
+                          <Text
+                            className={`${theme.textSecondary} text-xs font-bold`}
+                          >
+                            {cloudDeck.category} • {cloudDeck.cardCount} cards
+                          </Text>
+                        </View>
+                      </View>
+                      <Text className={`${theme.textSecondary} text-sm mb-4`}>
+                        {cloudDeck.description}
+                      </Text>
+
+                      <TouchableOpacity
+                        onPress={() => handleDownloadCloudDeck(cloudDeck)}
+                        disabled={isInstalled || isDownloading}
+                        className={`py-3 rounded-xl items-center flex-row justify-center gap-2 ${
+                          isInstalled
+                            ? "bg-slate-800"
+                            : isDownloading
+                              ? "bg-blue-600/50"
+                              : "bg-blue-600"
+                        }`}
+                      >
+                        {isDownloading ? (
+                          <ActivityIndicator size="small" color="white" />
+                        ) : isInstalled ? (
+                          <>
+                            <LucideIcons.CheckCircle
+                              color="#94A3B8"
+                              size={18}
+                            />
+                            <Text className="text-slate-400 font-bold uppercase tracking-wide">
+                              Installed
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <LucideIcons.Download color="white" size={18} />
+                            <Text className="text-white font-bold uppercase tracking-wide">
+                              Download Pack
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* ──────────────────────────────────────────────────────────────────────── */}
+      {/* MODAL: Editor Drawer                                                     */}
+      {/* ──────────────────────────────────────────────────────────────────────── */}
       <Modal visible={editingDeck !== null} animationType="slide" transparent>
-        <SafeAreaView className="flex-1 bg-black/40 p-4 justify-end">
+        <SafeAreaView className="flex-1 bg-black/60 p-4 justify-end">
           <View
             className={`${theme.surface} border rounded-3xl p-5 h-[80%] shadow-2xl`}
           >
-            <View className="flex-row justify-between items-center border-b border-slate-800/10 pb-3 mb-4">
+            <View className="flex-row justify-between items-center border-b border-slate-800/20 pb-3 mb-4">
               <Text className={`${theme.textPrimary} font-black text-lg`}>
                 {editingDeck?.name}
               </Text>
