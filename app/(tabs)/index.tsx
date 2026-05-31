@@ -66,30 +66,33 @@ export default function HomeScreen() {
                 <Icon size={22} color={accent.color} strokeWidth={2} />
               </View>
 
-              {/* Text */}
+              {/* Text block */}
               <View style={styles.modeCardText}>
-                <Text style={styles.modeCardTitle}>{meta.label}</Text>
-                <Text style={styles.modeCardDesc}>{meta.description}</Text>
-              </View>
+                {/* Top strip: title + badge */}
+                <View style={styles.titleStrip}>
+                  <Text style={styles.modeCardTitle}>{meta.label}</Text>
+                  <View
+                    style={[
+                      styles.orientationBadge,
+                      {
+                        backgroundColor: accent.colorBg,
+                        borderColor: accent.colorBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.orientationBadgeText,
+                        { color: accent.colorMuted },
+                      ]}
+                    >
+                      {meta.orientationBadge}
+                    </Text>
+                  </View>
+                </View>
 
-              {/* Orientation badge */}
-              <View
-                style={[
-                  styles.orientationBadge,
-                  {
-                    backgroundColor: accent.colorBg,
-                    borderColor: accent.colorBorder,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.orientationBadgeText,
-                    { color: accent.colorMuted },
-                  ]}
-                >
-                  {meta.orientationBadge}
-                </Text>
+                {/* Description */}
+                <Text style={styles.modeCardDesc}>{meta.description}</Text>
               </View>
             </TouchableOpacity>
           );
@@ -176,14 +179,20 @@ const styles = StyleSheet.create({
   },
   modeCardText: {
     flex: 1,
-    paddingRight: 8,
+    // Leave some padding so the description doesn't run into the glow circle
+    paddingRight: 48,
+  },
+  titleStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
   },
   modeCardTitle: {
     color: "#f1f5f9",
     fontSize: 17,
     fontWeight: "900",
     letterSpacing: -0.3,
-    marginBottom: 4,
   },
   modeCardDesc: {
     color: "#475569",
@@ -196,8 +205,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    alignSelf: "flex-start",
-    flexShrink: 0,
   },
   orientationBadgeText: {
     fontSize: 9,

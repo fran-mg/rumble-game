@@ -85,7 +85,7 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
     meta: {
       label: "Heads Up",
       description:
-        "Hold to your forehead. Tilt to pass or score. Others describe word.",
+        "Hold to your forehead. Tilt to pass or score. Others describe to you.",
       Icon: LucideIcons.Smartphone,
       orientationBadge: "Landscape",
       orientation: "landscape",
@@ -115,7 +115,7 @@ export const MODE_THEMES: Record<string, ModeTheme> = {
       label: "Catchphrase",
       description: "Describe or act it out as fast as you can.",
       Icon: LucideIcons.Hourglass,
-      orientationBadge: "Rotate",
+      orientationBadge: "Rotatable",
       orientation: "any",
       usesTilt: false,
       showsTabooWords: false,
