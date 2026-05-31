@@ -15,8 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../stores/useDeckStore";
 import { generateDeckViaAI } from "../../utils/aiGenerator";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
-import CloudDecksModal from "./DownloadDecks";
-import EditDeckModal from "./EditDeck";
+import CloudDecksModal from "./_DownloadDecks";
+import EditDeckModal from "./_EditDeck";
 
 // Helper to reliably map icon names so local and downloaded icons match
 const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
