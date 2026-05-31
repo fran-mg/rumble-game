@@ -19,6 +19,7 @@ configureReanimatedLogger({ level: ReanimatedLogLevel.error, strict: false });
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  colorScheme === "dark"; // Hard coding dark theme - affects phone bottom strip.
 
   useEffect(() => {
     initDatabase().catch(console.error);
