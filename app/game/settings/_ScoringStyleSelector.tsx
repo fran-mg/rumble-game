@@ -6,6 +6,11 @@ import { ScoringStyle } from "../../../stores/useGameStore";
 import { ModeAccent } from "../../../utils/_modeTheme";
 import TargetLimitInput from "./_TargetLimitInput";
 
+// ─── DEV ─────────────────────────────────────────────────────────────────────
+// "rounds" | "boardgame" to force a scoring style, or null to allow player to choose freely.
+const DEV_LOCK_SCORING_STYLE: ScoringStyle | null = "rounds"; // "rounds" | "boardgame" | null
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface ScoringStyleSelectorProps {
   scoringStyle: ScoringStyle;
   onScoringStyleChange: (style: ScoringStyle) => void;
@@ -21,80 +26,86 @@ export default function ScoringStyleSelector({
   onTargetLimitChange,
   accent,
 }: ScoringStyleSelectorProps) {
-  const isRounds = scoringStyle === "rounds";
+  const lockScoringStyle = DEV_LOCK_SCORING_STYLE ?? undefined;
+  const isLocked = lockScoringStyle !== undefined;
+
+  React.useEffect(() => {
+    if (isLocked && scoringStyle !== lockScoringStyle) {
+      onScoringStyleChange(lockScoringStyle!);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const options = [
+    {
+      value: "rounds" as ScoringStyle,
+      label: "Rounds",
+      Icon: LucideIcons.RefreshCw,
+    },
+    {
+      value: "boardgame" as ScoringStyle,
+      label: "Board Game",
+      Icon: LucideIcons.LayoutGrid,
+    },
+  ] as const;
 
   return (
     <View style={styles.card}>
-      {/* Card shine */}
       <View style={styles.cardShine} pointerEvents="none" />
 
-      {/* Section label */}
       <View style={styles.sectionLabelRow}>
         <LucideIcons.Trophy size={11} color="#64748b" strokeWidth={2.5} />
         <Text style={styles.sectionLabel}>Scoring Style</Text>
       </View>
 
-      {/* Rounds / Boardgame toggle */}
       <View style={styles.toggleTrack}>
-        <TouchableOpacity
-          onPress={() => onScoringStyleChange("rounds")}
-          style={[
-            styles.toggleOption,
-            isRounds && {
-              backgroundColor: accent.colorBg,
-              borderColor: accent.colorBorder,
-            },
-            !isRounds && styles.toggleOptionInactive,
-          ]}
-          activeOpacity={0.75}
-        >
-          <LucideIcons.RefreshCw
-            size={13}
-            color={isRounds ? accent.colorMuted : "#475569"}
-            strokeWidth={2.5}
-          />
-          <Text
-            style={[
-              styles.toggleText,
-              { color: isRounds ? accent.colorMuted : "#475569" },
-            ]}
-          >
-            Rounds
-          </Text>
-        </TouchableOpacity>
+        {options.map(({ value, label, Icon }) => {
+          const isActive = scoringStyle === value;
+          const isDisabled = isLocked && lockScoringStyle !== value;
+          const isBlocked = isLocked && !isActive;
 
-        <TouchableOpacity
-          onPress={() => onScoringStyleChange("boardgame")}
-          style={[
-            styles.toggleOption,
-            !isRounds && {
-              backgroundColor: accent.colorBg,
-              borderColor: accent.colorBorder,
-            },
-            isRounds && styles.toggleOptionInactive,
-          ]}
-          activeOpacity={0.75}
-        >
-          <LucideIcons.LayoutGrid
-            size={13}
-            color={!isRounds ? accent.colorMuted : "#475569"}
-            strokeWidth={2.5}
-          />
-          <Text
-            style={[
-              styles.toggleText,
-              { color: !isRounds ? accent.colorMuted : "#475569" },
-            ]}
-          >
-            Board Game
-          </Text>
-        </TouchableOpacity>
+          return (
+            <TouchableOpacity
+              key={value}
+              onPress={() => !isBlocked && onScoringStyleChange(value)}
+              activeOpacity={isBlocked ? 1 : 0.75}
+              style={[
+                styles.toggleOption,
+                isActive
+                  ? {
+                      backgroundColor: accent.colorBg,
+                      borderColor: accent.colorBorder,
+                    }
+                  : styles.toggleOptionInactive,
+                isDisabled && styles.toggleOptionDisabled,
+              ]}
+            >
+              <Icon
+                size={13}
+                color={isActive ? accent.colorMuted : "#475569"}
+                strokeWidth={2.5}
+              />
+              <Text
+                style={[
+                  styles.toggleText,
+                  { color: isActive ? accent.colorMuted : "#475569" },
+                ]}
+              >
+                {label}
+              </Text>
+              {isLocked && isActive && (
+                <LucideIcons.Lock
+                  size={10}
+                  color={accent.colorMuted}
+                  strokeWidth={2.5}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* Divider */}
       <View style={styles.divider} />
 
-      {/* Target input row — shared component */}
       <TargetLimitInput
         scoringStyle={scoringStyle}
         targetLimit={targetLimit}
@@ -157,6 +168,9 @@ const styles = StyleSheet.create({
   toggleOptionInactive: {
     backgroundColor: "rgba(255,255,255,0.04)",
     borderColor: "rgba(255,255,255,0.06)",
+  },
+  toggleOptionDisabled: {
+    opacity: 0.3,
   },
   toggleText: {
     fontSize: 13,
