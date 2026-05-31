@@ -3,16 +3,16 @@ import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MatchPlayer, useGameStore } from "../../stores/useGameStore";
+import { Participant, useGameStore } from "../../stores/useGameStore";
 
 export default function RoundTestScreen() {
   const router = useRouter();
 
   const handleLaunchRoundTest = () => {
     // 1. Create a couple of players so the game knows who is next
-    const mockPlayers: MatchPlayer[] = [
-      { id: 1, name: "Player One", teamId: 1 },
-      { id: 2, name: "Player Two", teamId: 2 },
+    const mockPlayers: Participant[] = [
+      { id: 1, name: "Player One", color: "pink", type: "player" },
+      { id: 2, name: "Player Two", color: "blue", type: "player" },
     ];
 
     // 2. Create the exact history of the 5 cards they interacted with
@@ -29,12 +29,10 @@ export default function RoundTestScreen() {
     useGameStore.setState({
       mode: "taboo",
       scoringStyle: "rounds",
-      playStyle: "single",
+      playStyle: "solo",
       targetLimit: 3,
       timerDuration: 60,
-
-      matchTeams: [],
-      matchPlayers: mockPlayers,
+      participants: mockPlayers,
 
       // State exactly as it would be when routing to round-summary
       isPlaying: true,

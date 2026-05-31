@@ -3,7 +3,7 @@ import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MatchPlayer, useGameStore } from "../../stores/useGameStore";
+import { Participant, useGameStore } from "../../stores/useGameStore";
 
 export default function MatchTestScreen() {
   const router = useRouter();
@@ -34,12 +34,13 @@ export default function MatchTestScreen() {
     ];
 
     // Use strictly numbers for IDs and map required teamId values
-    const mockPlayers: MatchPlayer[] = mockNames.map((name, index) => {
+    const mockPlayers: Participant[] = mockNames.map((name, index) => {
       const numericId = index + 1;
       return {
         id: numericId,
         name: name,
-        teamId: numericId,
+        color: "pink",
+        type: "player",
       };
     });
 
@@ -62,11 +63,10 @@ export default function MatchTestScreen() {
     useGameStore.setState({
       mode: "taboo",
       scoringStyle: "rounds",
-      playStyle: "single",
+      playStyle: "solo",
       targetLimit: 10,
       timerDuration: 60,
-      matchTeams: [],
-      matchPlayers: mockPlayers,
+      participants: mockPlayers,
       roundScores: mockRoundScores,
       cardsInRound: [],
       currentRound: 10,
