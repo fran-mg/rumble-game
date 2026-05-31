@@ -147,10 +147,8 @@ export default function SettingsScreen() {
         >
           {/* ── Page header ── */}
           <View style={styles.pageHeader}>
-            {/* Back nav hint */}
             <Text style={styles.pageEyebrow}>Match Setup</Text>
 
-            {/* Mode identity card */}
             <View
               style={[styles.modeCard, { borderColor: accent.colorBorder }]}
             >

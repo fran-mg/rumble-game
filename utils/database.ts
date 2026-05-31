@@ -2,7 +2,7 @@ import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
 // Bump DB name to force fresh schema (dev only — use migrations in production)
-const DB_NAME = "articulate_v3.db";
+const DB_NAME = "articulate_v4.db";
 
 let db: SQLite.SQLiteDatabase | null = null;
 if (Platform.OS !== "web") {
@@ -16,16 +16,16 @@ export const initDatabase = async (): Promise<void> => {
     await db.execAsync("PRAGMA journal_mode = WAL;");
 
     const createQueries = [
-      // ── DECKS ────────────────────────────────────────────────────────────────
-      // Persisted permanently — user's card library
+      // ── DECKS ──────────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS decks (
         id             INTEGER PRIMARY KEY AUTOINCREMENT,
         name           TEXT    NOT NULL,
         category       TEXT,
         source         TEXT    DEFAULT 'bundled',
-        description    TEXT,
+        description    TEXT    DEFAULT '',
         icon           TEXT    DEFAULT 'Layers',
         color          TEXT    DEFAULT '#3B82F6',
+        url            TEXT    DEFAULT '',
         created_at     INTEGER DEFAULT (strftime('%s', 'now')),
         updated_at     INTEGER DEFAULT (strftime('%s', 'now')),
         is_favorited   INTEGER DEFAULT 0,
@@ -33,8 +33,7 @@ export const initDatabase = async (): Promise<void> => {
         card_count     INTEGER DEFAULT 0
       );`,
 
-      // ── CARDS ────────────────────────────────────────────────────────────────
-      // Persisted permanently — belong to decks
+      // ── CARDS ──────────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS cards (
         id            INTEGER PRIMARY KEY AUTOINCREMENT,
         deck_id       INTEGER NOT NULL,
@@ -49,8 +48,7 @@ export const initDatabase = async (): Promise<void> => {
         FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE
       );`,
 
-      // ── GAME MODES ───────────────────────────────────────────────────────────
-      // Persisted — static lookup table, seeded once
+      // ── GAME MODES ─────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS game_modes (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
         name         TEXT    NOT NULL UNIQUE,
@@ -61,17 +59,7 @@ export const initDatabase = async (): Promise<void> => {
         is_enabled   INTEGER DEFAULT 1
       );`,
 
-      // ── GAMES ────────────────────────────────────────────────────────────────
-      // One row per game session.
-      //
-      // participants_snapshot — JSON array of Participant objects captured at
-      //   game-start. Keeps historical records readable after the Zustand store
-      //   is cleared. Shape: { id, name, color, type }[]
-      //
-      // play_style — 'solo' | 'team'  (drives UI copy in stats screens)
-      //
-      // winning_participant_id — plain integer matching a participant's ephemeral
-      //   id; no FK because participants are not a DB table.
+      // ── GAMES ──────────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS games (
         id                     INTEGER PRIMARY KEY AUTOINCREMENT,
         mode_id                INTEGER NOT NULL,
@@ -86,10 +74,7 @@ export const initDatabase = async (): Promise<void> => {
         FOREIGN KEY (mode_id) REFERENCES game_modes(id)
       );`,
 
-      // ── ROUNDS ───────────────────────────────────────────────────────────────
-      // One row per turn.
-      // participant_id matches Participant.id from the Zustand store /
-      //   games.participants_snapshot — intentionally no FK constraint.
+      // ── ROUNDS ─────────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS rounds (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,
         game_id         INTEGER NOT NULL,
@@ -104,8 +89,7 @@ export const initDatabase = async (): Promise<void> => {
         FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
       );`,
 
-      // ── ROUND CARDS ──────────────────────────────────────────────────────────
-      // Per-card result within a round — drives card statistics
+      // ── ROUND CARDS ────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS round_cards (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
         round_id   INTEGER NOT NULL,
@@ -117,22 +101,14 @@ export const initDatabase = async (): Promise<void> => {
         FOREIGN KEY (card_id)  REFERENCES cards(id)
       );`,
 
-      // ── SELECTED DECKS ───────────────────────────────────────────────────────
-      // Persists the user's active deck selection across app restarts
+      // ── SELECTED DECKS ─────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS selected_decks (
         deck_id     INTEGER PRIMARY KEY,
         selected_at INTEGER DEFAULT (strftime('%s', 'now')),
         FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE
       );`,
 
-      // ── BOARD STATE ──────────────────────────────────────────────────────────
-      // Board game mode only. One row per game.
-      //
-      // participant_positions — JSON object keyed by participant id:
-      //   { [participantId: number]: tileIndex }
-      //   Replaces the old team_positions join table entirely.
-      //
-      // tile_categories — JSON string[]  maps tile index → category name
+      // ── BOARD STATE ────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS board_state (
         id                     INTEGER PRIMARY KEY AUTOINCREMENT,
         game_id                INTEGER NOT NULL UNIQUE,
@@ -144,15 +120,14 @@ export const initDatabase = async (): Promise<void> => {
         FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
       );`,
 
-      // ── SETTINGS ─────────────────────────────────────────────────────────────
-      // Simple key-value user preferences
+      // ── SETTINGS ───────────────────────────────────────────────────────────
       `CREATE TABLE IF NOT EXISTS settings (
         key        TEXT    PRIMARY KEY,
         value      TEXT    NOT NULL,
         updated_at INTEGER DEFAULT (strftime('%s', 'now'))
       );`,
 
-      // ── INDICES ──────────────────────────────────────────────────────────────
+      // ── INDICES ────────────────────────────────────────────────────────────
       `CREATE INDEX IF NOT EXISTS idx_cards_deck_id  ON cards(deck_id);`,
       `CREATE INDEX IF NOT EXISTS idx_cards_hidden   ON cards(is_hidden);`,
       `CREATE INDEX IF NOT EXISTS idx_rounds_game_id ON rounds(game_id);`,
@@ -182,11 +157,11 @@ const seedInitialData = async (): Promise<void> => {
     if (count === 0) {
       await db.runAsync(`
         INSERT INTO game_modes (name, display_name, description, icon, is_enabled) VALUES
-          ('headsup', 'Heads Up', 'Guess the word by what's described to you.',         'Smartphone', 1),
-          ('catchphrase',      'Catchphrase',      'Describe the word without saying it.',       'Hourglass',           1),
-          ('charades',   'Charades',   'Act it out — no speaking allowed.',             'Drama',         1),
-          ('taboo',   'Taboo',   'Describe without using forbidden words.',   'CircleSlash',           1),
-          ('boardgame',  'Board Game', 'Race along the track — category tiles decide.','Trophy',        1);
+          ('headsup',     'Heads Up',    'Guess the word by what''s described to you.', 'Smartphone',  1),
+          ('catchphrase', 'Catchphrase', 'Describe the word without saying it.',        'Hourglass',   1),
+          ('charades',    'Charades',    'Act it out — no speaking allowed.',            'Drama',       1),
+          ('taboo',       'Taboo',       'Describe without using forbidden words.',      'CircleSlash', 1),
+          ('boardgame',   'Board Game',  'Race along the track — category tiles decide.','Trophy',     1);
       `);
     }
 
@@ -214,11 +189,8 @@ const seedInitialData = async (): Promise<void> => {
 /**
  * A Participant is the single competitive unit in any game mode.
  *
- *   solo mode  → type = 'player'  (each person competes individually)
- *   team mode  → type = 'team'    (the team competes as one unit)
- *
- * The game engine treats both identically — scores, turns, and history
- * are all keyed by participant id regardless of type.
+ *   solo mode → type = 'player'
+ *   team mode → type = 'team'
  */
 export interface Participant {
   /** Locally generated (Date.now()-based). Not a DB primary key. */
@@ -228,26 +200,35 @@ export interface Participant {
   type: "player" | "team";
 }
 
+/**
+ * Deck shape returned by all dbHelpers deck queries.
+ * `id` is a string so it matches the store / UI Deck interface directly —
+ * SQLite AUTOINCREMENT values are cast via the SELECT alias.
+ */
 export interface DeckRow {
-  id: number;
+  /** CAST to TEXT in the SELECT so consumers always get a string. */
+  id: string;
   name: string;
-  category: string | null;
-  source: string;
-  description: string | null;
+  category: string;
+  description: string;
   icon: string;
   color: string;
-  created_at: number;
-  updated_at: number;
+  url: string;
+  /** Aliased from card_count in the SELECT. */
+  cardCount: number;
+  // ── extra DB-only columns (not in the public Deck interface) ──
+  source: string;
   is_favorited: number;
   download_count: number;
-  card_count: number;
+  created_at: number;
+  updated_at: number;
 }
 
 export interface CardRow {
   id: number;
   deck_id: number;
   word: string;
-  taboo_words: string | null; // stored as JSON string → parse to string[]
+  taboo_words: string | null;
   difficulty: string;
   hint: string | null;
   is_hidden: number;
@@ -255,6 +236,27 @@ export interface CardRow {
   times_guessed: number;
   created_at: number;
 }
+
+// ─── DECK SELECT FRAGMENT ─────────────────────────────────────────────────────
+// Single source of truth for the column list / aliases used in every deck query.
+// Casting id to TEXT and aliasing card_count → cardCount means DeckRow matches
+// the public Deck interface without any post-processing in the store.
+
+const DECK_SELECT = `
+  CAST(id AS TEXT) AS id,
+  name,
+  COALESCE(category,    '')         AS category,
+  COALESCE(description, '')         AS description,
+  COALESCE(icon,        'Layers')   AS icon,
+  COALESCE(color,       '#3B82F6')  AS color,
+  COALESCE(url,         '')         AS url,
+  card_count                        AS cardCount,
+  source,
+  is_favorited,
+  download_count,
+  created_at,
+  updated_at
+`;
 
 // ─── DB HELPERS ───────────────────────────────────────────────────────────────
 
@@ -264,8 +266,15 @@ export const dbHelpers = {
   async getAllDecks(): Promise<DeckRow[]> {
     if (!db) return [];
     return db.getAllAsync(
-      "SELECT * FROM decks ORDER BY is_favorited DESC, name ASC;",
+      `SELECT ${DECK_SELECT} FROM decks ORDER BY is_favorited DESC, name ASC;`,
     ) as Promise<DeckRow[]>;
+  },
+
+  async getDeckById(deckId: number): Promise<DeckRow | null> {
+    if (!db) return null;
+    return db.getFirstAsync(`SELECT ${DECK_SELECT} FROM decks WHERE id = ?;`, [
+      deckId,
+    ]) as Promise<DeckRow | null>;
   },
 
   async createDeck(
@@ -275,12 +284,13 @@ export const dbHelpers = {
     icon: string = "Layers",
     color: string = "#3B82F6",
     description: string = "",
+    url: string = "",
   ): Promise<number | null> {
     if (!db) return null;
     const result = await db.runAsync(
-      `INSERT INTO decks (name, category, source, icon, color, description)
-       VALUES (?, ?, ?, ?, ?, ?);`,
-      [name, category, source, icon, color, description],
+      `INSERT INTO decks (name, category, source, icon, color, description, url)
+       VALUES (?, ?, ?, ?, ?, ?, ?);`,
+      [name, category, source, icon, color, description, url],
     );
     return result.lastInsertRowId;
   },
@@ -290,7 +300,13 @@ export const dbHelpers = {
     fields: Partial<
       Pick<
         DeckRow,
-        "name" | "category" | "icon" | "color" | "description" | "is_favorited"
+        | "name"
+        | "category"
+        | "icon"
+        | "color"
+        | "description"
+        | "url"
+        | "is_favorited"
       >
     >,
   ): Promise<void> {
@@ -300,7 +316,9 @@ export const dbHelpers = {
     const setClauses = entries.map(([k]) => `${k} = ?`).join(", ");
     const values = entries.map(([, v]) => v);
     await db.runAsync(
-      `UPDATE decks SET ${setClauses}, updated_at = (strftime('%s', 'now')) WHERE id = ?;`,
+      `UPDATE decks
+       SET ${setClauses}, updated_at = (strftime('%s', 'now'))
+       WHERE id = ?;`,
       [...values, deckId],
     );
   },
@@ -382,24 +400,24 @@ export const dbHelpers = {
 
   async getShuffledCardsFromDecks(deckIds: number[]): Promise<CardRow[]> {
     if (!db || deckIds.length === 0) return [];
-
-    // SQLite query dynamically maps the amount of parameters passed
     const placeholders = deckIds.map(() => "?").join(",");
     return db.getAllAsync(
-      `SELECT * FROM cards 
+      `SELECT * FROM cards
        WHERE deck_id IN (${placeholders}) AND is_hidden = 0
        ORDER BY RANDOM();`,
       deckIds,
     ) as Promise<CardRow[]>;
   },
 
-  /** Internal — keeps decks.card_count accurate after any card mutation */
+  /** Keeps decks.card_count accurate after any card mutation. */
   async _refreshDeckCardCount(deckId: number): Promise<void> {
     if (!db) return;
     await db.runAsync(
       `UPDATE decks
-       SET card_count = (SELECT COUNT(*) FROM cards WHERE deck_id = ? AND is_hidden = 0),
-           updated_at = (strftime('%s', 'now'))
+       SET card_count = (
+         SELECT COUNT(*) FROM cards WHERE deck_id = ? AND is_hidden = 0
+       ),
+       updated_at = (strftime('%s', 'now'))
        WHERE id = ?;`,
       [deckId, deckId],
     );
@@ -407,11 +425,6 @@ export const dbHelpers = {
 
   // ── GAME SESSIONS ──────────────────────────────────────────────────────────
 
-  /**
-   * Creates a game session row and snapshots the participant list.
-   * The snapshot means historical data stays readable even after the
-   * Zustand store has been reset for a new game.
-   */
   async createGame(
     modeId: number,
     playStyle: "solo" | "team",

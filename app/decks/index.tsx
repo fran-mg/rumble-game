@@ -14,13 +14,20 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../stores/useDeckStore";
 import { generateDeckViaAI } from "../../utils/aiGenerator";
-import {
-  CloudDeckIndexItem,
-  fetchCloudDecksIndex,
-} from "../../utils/cloudDecks";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
 import CloudDecksModal from "./DownloadDecks";
 import EditDeckModal from "./EditDeck";
+
+// Helper to reliably map icon names so local and downloaded icons match
+const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
+  if (!iconName) return Fallback;
+  const pascal = iconName.replace(/(^\w|-\w)/g, (clear) =>
+    clear.replace(/-/, "").toUpperCase(),
+  );
+  return (
+    (LucideIcons as any)[iconName] || (LucideIcons as any)[pascal] || Fallback
+  );
+};
 
 export default function DecksScreen() {
   const router = useRouter();
@@ -31,6 +38,7 @@ export default function DecksScreen() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const [editingDeck, setEditingDeck] = useState<any | null>(null);
+
   const [isCloudModalVisible, setIsCloudModalVisible] = useState(false);
 
   useEffect(() => {
@@ -187,27 +195,25 @@ export default function DecksScreen() {
 
         {/* ── Deck List ── */}
         {filteredDecks.map((deck) => {
-          const deckIconKey = (deck as any).icon;
-          const DeckIcon =
-            (LucideIcons as any)[deckIconKey] || LucideIcons.Layers;
-          const deckColor = (deck as any).color || "#3B82F6";
+          const DeckIcon = (LucideIcons as any)[deck.icon] || LucideIcons.Cloud;
+          const deckColor = deck.color || "#3B82F6";
 
           return (
             <View key={deck.id} style={styles.deckCard}>
               <View style={styles.cardShine} pointerEvents="none" />
 
               <View style={styles.deckCardInner}>
-                {/* Icon with deck colour — matching DownloadDecks style */}
+                {/* Icon — full deck colour */}
                 <View
                   style={[
                     styles.deckIcon,
                     {
-                      backgroundColor: `${deckColor}22`,
-                      borderColor: `${deckColor}44`,
+                      backgroundColor: `${deck.color}22`,
+                      borderColor: `${deck.color}44`,
                     },
                   ]}
                 >
-                  <DeckIcon color={deckColor} size={24} strokeWidth={2} />
+                  <DeckIcon color={deckColor} size={22} strokeWidth={2} />
                 </View>
 
                 {/* Info */}
@@ -217,8 +223,7 @@ export default function DecksScreen() {
                     <Text style={styles.deckCategory}>{deck.category}</Text>
                     <View style={styles.deckMetaDot} />
                     <Text style={styles.deckCardCount}>
-                      {deck.card_count}{" "}
-                      {deck.card_count === 1 ? "card" : "cards"}
+                      {deck.cardCount} cards
                     </Text>
                   </View>
                 </View>
@@ -242,7 +247,7 @@ export default function DecksScreen() {
                     activeOpacity={0.7}
                   >
                     <LucideIcons.Trash2
-                      color="#f87171"
+                      color="#fca5a5"
                       size={15}
                       strokeWidth={2}
                     />
@@ -261,7 +266,7 @@ export default function DecksScreen() {
         {filteredDecks.length === 0 && (
           <View style={styles.emptyState}>
             <LucideIcons.PackageOpen
-              color="#475569"
+              color="#64748b"
               size={40}
               strokeWidth={1.5}
             />
@@ -305,14 +310,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   pageEyebrow: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 2.5,
@@ -337,7 +342,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.07)",
     borderRadius: 24,
     padding: 20,
     overflow: "hidden",
@@ -384,12 +389,12 @@ const styles = StyleSheet.create({
   aiInput: {
     flex: 1,
     height: 48,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 14,
     paddingHorizontal: 14,
-    color: "#f1f5f9",
+    color: "#e2e8f0",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -404,7 +409,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   aiForgeBtnDisabled: {
-    opacity: 0.35,
+    opacity: 0.5,
   },
 
   // ── Category filter ───────────────────────────────────────────────────────
@@ -419,12 +424,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   categoryChipActive: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.18)",
   },
   categoryChipInactive: {
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderColor: "rgba(255,255,255,0.12)",
   },
   categoryChipText: {
     fontSize: 12,
@@ -437,7 +442,7 @@ const styles = StyleSheet.create({
   deckCard: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.08)",
     borderRadius: 20,
     overflow: "hidden",
   },
@@ -448,8 +453,8 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   deckIcon: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: "center",
@@ -464,7 +469,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     letterSpacing: -0.2,
-    marginBottom: 6,
+    marginBottom: 5,
   },
   deckMetaRow: {
     flexDirection: "row",
@@ -481,7 +486,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#475569",
+    backgroundColor: "#64748b",
   },
   deckCardCount: {
     color: "#94a3b8",
@@ -496,19 +501,19 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   deckActionBtnDelete: {
-    backgroundColor: "rgba(239,68,68,0.12)",
-    borderColor: "rgba(239,68,68,0.3)",
+    backgroundColor: "rgba(239,68,68,0.1)",
+    borderColor: "rgba(239,68,68,0.25)",
   },
   deckColorStrip: {
-    height: 3,
-    opacity: 0.7,
+    height: 2,
+    opacity: 0.6,
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -519,7 +524,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   emptyStateText: {
-    color: "#64748b",
+    color: "#94a3b8",
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.3,

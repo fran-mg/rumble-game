@@ -1,14 +1,22 @@
+// app/game/settings/_DeckSelector.tsx
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Deck } from "../../../stores/useDeckStore";
 import { ModeAccent } from "../../../utils/_modeTheme";
 
 interface DeckSelectorProps {
-  decks: any[];
-  selectedDeckIds: number[];
+  decks: Deck[];
+  selectedDeckIds: string[];
   isDecksExpanded: boolean;
   setIsDecksExpanded: (val: boolean) => void;
-  toggleDeckSelection: (id: number) => void;
+  toggleDeckSelection: (deckId: string) => void;
   accent: ModeAccent;
 }
 
@@ -27,6 +35,7 @@ export default function DeckSelector({
     <View style={styles.card}>
       <View style={styles.cardShine} pointerEvents="none" />
 
+      {/* ── Header ── */}
       <TouchableOpacity
         onPress={() => setIsDecksExpanded(!isDecksExpanded)}
         style={styles.header}
@@ -84,58 +93,117 @@ export default function DeckSelector({
         </View>
       </TouchableOpacity>
 
+      {/* ── Expanded list — seamlessly attached, scrollable ── */}
       {isDecksExpanded && (
         <>
           <View style={styles.divider} />
-          <View style={styles.deckGrid}>
-            {decks.map((deck) => {
-              const isSelected = selectedDeckIds.includes(deck.id);
-              return (
-                <TouchableOpacity
-                  key={deck.id}
-                  onPress={() => toggleDeckSelection(deck.id)}
-                  activeOpacity={0.75}
-                  style={[
-                    styles.deckChip,
-                    isSelected
-                      ? {
-                          backgroundColor: accent.colorBg,
-                          borderColor: accent.colorBorder,
-                        }
-                      : styles.deckChipInactive,
-                  ]}
-                >
-                  {isSelected && (
-                    <LucideIcons.Check
-                      size={11}
-                      color={accent.colorMuted}
-                      strokeWidth={3}
-                    />
-                  )}
-                  <Text
+
+          {decks.length === 0 ? (
+            <View style={styles.emptyState}>
+              <LucideIcons.PackageOpen
+                color="#334155"
+                size={32}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.emptyText}>No decks available</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.listScroll}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
+              {decks.map((deck) => {
+                const isSelected = selectedDeckIds.includes(deck.id);
+                const DeckIcon =
+                  (LucideIcons as any)[deck.icon] || LucideIcons.Layers;
+                const deckColor = deck.color || "#3B82F6";
+
+                return (
+                  <TouchableOpacity
+                    key={deck.id}
+                    onPress={() => toggleDeckSelection(deck.id)}
+                    activeOpacity={0.75}
                     style={[
-                      styles.deckChipName,
-                      { color: isSelected ? accent.colorMuted : "#475569" },
+                      styles.deckRow,
+                      isSelected
+                        ? {
+                            backgroundColor: accent.colorBg,
+                            borderColor: accent.colorBorder,
+                          }
+                        : styles.deckRowInactive,
                     ]}
                   >
-                    {deck.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.deckChipCount,
-                      {
-                        color: isSelected
-                          ? `${accent.colorMuted}88`
-                          : "#1e293b",
-                      },
-                    ]}
-                  >
-                    {deck.card_count}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                    {/* Icon - uses accent color when selected, deck color when not */}
+                    <View
+                      style={[
+                        styles.deckIcon,
+                        isSelected
+                          ? {
+                              backgroundColor: accent.colorBg,
+                              borderColor: accent.colorBorder,
+                            }
+                          : {
+                              backgroundColor: `${deckColor}22`,
+                              borderColor: `${deckColor}44`,
+                            },
+                      ]}
+                    >
+                      <DeckIcon
+                        color={isSelected ? accent.color : deckColor}
+                        size={18}
+                        strokeWidth={2}
+                      />
+                    </View>
+
+                    {/* Info */}
+                    <View style={styles.deckInfo}>
+                      <Text
+                        style={[
+                          styles.deckName,
+                          isSelected && { color: accent.colorMuted },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {deck.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.deckMeta,
+                          isSelected && { color: `${accent.colorMuted}99` },
+                        ]}
+                      >
+                        {deck.category}
+                        {"  ·  "}
+                        {deck.cardCount}{" "}
+                        {deck.cardCount === 1 ? "card" : "cards"}
+                      </Text>
+                    </View>
+
+                    {/* Checkbox */}
+                    <View
+                      style={[
+                        styles.checkbox,
+                        isSelected && {
+                          backgroundColor: accent.color,
+                          borderColor: accent.color,
+                        },
+                      ]}
+                    >
+                      {isSelected && (
+                        <LucideIcons.Check
+                          size={12}
+                          color="#fff"
+                          strokeWidth={3}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
         </>
       )}
     </View>
@@ -143,6 +211,7 @@ export default function DeckSelector({
 }
 
 const styles = StyleSheet.create({
+  // ── Outer card — same bg as the list so they read as one block ────────────
   card: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
@@ -162,6 +231,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -218,36 +289,80 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // ── Divider ───────────────────────────────────────────────────────────────
   divider: {
     height: 1,
     backgroundColor: "rgba(255,255,255,0.06)",
     marginTop: 16,
     marginBottom: 14,
   },
-  deckGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+
+  // ── Scrollable list — no extra wrapper bg so it blends with card ──────────
+  listScroll: {
+    maxHeight: 280,
   },
-  deckChip: {
+  listContent: {
+    gap: 6,
+  },
+
+  // ── Deck rows ─────────────────────────────────────────────────────────────
+  deckRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
     borderWidth: 1,
   },
-  deckChipInactive: {
+  deckRowInactive: {
     backgroundColor: "rgba(255,255,255,0.03)",
     borderColor: "rgba(255,255,255,0.07)",
   },
-  deckChipName: {
-    fontSize: 13,
-    fontWeight: "700",
+  deckIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  deckChipCount: {
+  deckInfo: {
+    flex: 1,
+  },
+  deckName: {
+    color: "#e2e8f0",
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: -0.1,
+    marginBottom: 3,
+  },
+  deckMeta: {
+    color: "#475569",
     fontSize: 11,
+    fontWeight: "600",
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  // ── Empty ─────────────────────────────────────────────────────────────────
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 10,
+  },
+  emptyText: {
+    color: "#334155",
+    fontSize: 13,
     fontWeight: "600",
   },
 });
