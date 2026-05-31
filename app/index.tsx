@@ -23,6 +23,8 @@ if (Platform.OS === "android") {
 // true = user view, false = show dev tools
 const isProductionTest = false;
 
+const TAB_HEIGHT = 80;
+
 export default function HomeScreen() {
   const router = useRouter();
   const modes = getAllModes();
@@ -34,7 +36,6 @@ export default function HomeScreen() {
   // Dynamic drawer height measured from content
   const [drawerContentHeight, setDrawerContentHeight] = useState(0);
   const DRAWER_EXTRA_PADDING = 32;
-  const TAB_HEIGHT = 48;
   const drawerBodyHeight = drawerContentHeight + DRAWER_EXTRA_PADDING;
   const totalDrawerHeight = drawerBodyHeight + TAB_HEIGHT;
 
@@ -140,7 +141,7 @@ export default function HomeScreen() {
           })}
         </ScrollView>
 
-        {/* ── Decks button — centred in remaining space ── */}
+        {/* ── Decks button — positioned lower in remaining space ── */}
         <View style={styles.decksWrapper}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -187,7 +188,7 @@ export default function HomeScreen() {
                 styles.devArrowTabInner,
                 isDrawerOpen && styles.devArrowTabInnerOpen,
               ]}
-              pointerEvents="auto"
+              pointerEvents="none"
             >
               <View style={styles.devArrowTabLabel}>
                 {!isDrawerOpen && (
@@ -206,9 +207,10 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Drawer body — measures its content height on first render */}
+          {/* Drawer body */}
           <View
             pointerEvents="auto"
+            style={styles.drawerBody} // Add this style
             onLayout={(e) => {
               const h = e.nativeEvent.layout.height;
               if (h > 0 && h !== drawerContentHeight) {
@@ -231,7 +233,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    paddingTop: 16,
+    paddingTop: 36,
     marginBottom: 20,
   },
   title: {
@@ -255,65 +257,10 @@ const styles = StyleSheet.create({
   modesScroll: {
     flexShrink: 1,
     flexGrow: 0,
+    paddingTop: 36,
   },
   modesScrollContent: {
     gap: 12,
-  },
-
-  // ── Decks wrapper — fills leftover vertical space, centres content ─────────
-  decksWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    paddingVertical: 16,
-    minHeight: 96,
-  },
-  decksButton: {
-    backgroundColor: "#0f172a",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
-    borderRadius: 20,
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  decksButtonGlow: {
-    position: "absolute",
-    right: -24,
-    bottom: -24,
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: "rgba(148,163,184,0.06)",
-  },
-  decksButtonIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  decksButtonText: {
-    color: "#f1f5f9",
-    fontSize: 17,
-    fontWeight: "900",
-    letterSpacing: -0.3,
-    marginBottom: 3,
-  },
-  decksButtonSub: {
-    color: "#64748b",
-    fontSize: 12,
-    fontWeight: "500",
   },
 
   // ── Mode cards ────────────────────────────────────────────────────────────
@@ -383,37 +330,93 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
+  // ── Decks wrapper ──────────────────────────────────────────────────────
+  decksWrapper: {
+    flex: 1,
+    justifyContent: "center",
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  decksButton: {
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+    borderRadius: 20,
+    padding: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  decksButtonGlow: {
+    position: "absolute",
+    right: -24,
+    bottom: -24,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "rgba(148,163,184,0.06)",
+  },
+  decksButtonIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  decksButtonText: {
+    color: "#f1f5f9",
+    fontSize: 17,
+    fontWeight: "900",
+    letterSpacing: -0.3,
+    marginBottom: 3,
+  },
+  decksButtonSub: {
+    color: "#64748b",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+
   // ── Dev drawer ────────────────────────────────────────────────────────────
   devDrawerContainer: {
     position: "absolute",
-    bottom: 0,
-    left: -20,
-    right: -20,
+    bottom: -20,
+    left: 0, // Changed from -20
+    right: 0, // Changed from -20
   },
   devArrowTab: {
     position: "absolute",
-    top: 0,
+    top: 0, // Changed from 15 to align better
     alignSelf: "center",
     zIndex: 10,
+    // Add explicit hit slop for easier tapping
+    paddingTop: 10,
+    paddingBottom: 0,
+    paddingHorizontal: 20,
   },
   devArrowTabInner: {
     backgroundColor: "#1c0808",
     borderWidth: 1,
     borderColor: "rgba(239,68,68,0.4)",
     borderBottomWidth: 0,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     paddingHorizontal: 22,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 16,
+    paddingBottom: 12,
     alignItems: "center",
-    minWidth: 72,
-    // Taller / more prominent when closed
-    marginTop: -48,
+    minWidth: 80,
   },
   devArrowTabInnerOpen: {
-    // Smaller tab when drawer is open
-    marginTop: -32,
     paddingTop: 7,
     paddingBottom: 6,
     paddingHorizontal: 16,
@@ -428,5 +431,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 2,
+  },
+  drawerBody: {
+    marginTop: TAB_HEIGHT,
   },
 });
