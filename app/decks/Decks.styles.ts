@@ -1,5 +1,9 @@
 import { StyleSheet } from "react-native";
 
+export default function DummyRoute() {
+  return null;
+}
+
 export const styles = StyleSheet.create({
   root: {
     flex: 1,

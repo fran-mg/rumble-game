@@ -1,0 +1,433 @@
+{
+  "id": "general",
+  "name": "General Knowledge",
+  "category": "General",
+  "icon": "Layers",
+  "color": "#6366f1",
+  "description": "A broad mix of everyday words — perfect for any group.",
+  "difficulty": "Mixed",
+  "tags": ["general", "mixed", "family-friendly", "all-ages"],
+  "cardCount": 60,
+  "cards": [
+    {
+      "id": "general-001",
+      "word": "UMBRELLA",
+      "tabooWords": ["rain", "wet", "cover", "handle", "storm"],
+      "charadesHint": "open one above your head and walk in rain",
+      "passwordHint": "rain"
+    },
+    {
+      "id": "general-002",
+      "word": "VOLCANO",
+      "tabooWords": ["lava", "erupt", "mountain", "fire", "magma"],
+      "charadesHint": "build a cone with arms then explode upward",
+      "passwordHint": "erupt"
+    },
+    {
+      "id": "general-003",
+      "word": "SUBMARINE",
+      "tabooWords": ["sea", "underwater", "navy", "torpedo", "dive"],
+      "charadesHint": "crouch low and glide slowly across the floor",
+      "passwordHint": "periscope"
+    },
+    {
+      "id": "general-004",
+      "word": "COMPASS",
+      "tabooWords": ["north", "direction", "navigate", "south", "needle"],
+      "charadesHint": "spin slowly then point decisively one way",
+      "passwordHint": "north"
+    },
+    {
+      "id": "general-005",
+      "word": "TELESCOPE",
+      "tabooWords": ["stars", "see", "lens", "astronomer", "zoom"],
+      "charadesHint": "roll hands into a tube and peer through it",
+      "passwordHint": "stars"
+    },
+    {
+      "id": "general-006",
+      "word": "PARACHUTE",
+      "tabooWords": ["jump", "sky", "fall", "plane", "float"],
+      "charadesHint": "leap then drift slowly down with arms wide",
+      "passwordHint": "float"
+    },
+    {
+      "id": "general-007",
+      "word": "THERMOMETER",
+      "tabooWords": ["temperature", "hot", "cold", "mercury", "fever"],
+      "charadesHint": "hold finger under tongue and wait impatiently",
+      "passwordHint": "fever"
+    },
+    {
+      "id": "general-008",
+      "word": "LIGHTHOUSE",
+      "tabooWords": ["boat", "coast", "light", "sea", "beam"],
+      "charadesHint": "stand tall and rotate one arm like a beacon",
+      "passwordHint": "beam"
+    },
+    {
+      "id": "general-009",
+      "word": "TRAMPOLINE",
+      "tabooWords": ["jump", "bounce", "spring", "gym", "elastic"],
+      "charadesHint": "bounce repeatedly getting higher each time",
+      "passwordHint": "bounce"
+    },
+    {
+      "id": "general-010",
+      "word": "BOOMERANG",
+      "tabooWords": ["throw", "return", "Australia", "curved", "catch"],
+      "charadesHint": "fling something sideways then catch it coming back",
+      "passwordHint": "return"
+    },
+    {
+      "id": "general-011",
+      "word": "QUICKSAND",
+      "tabooWords": ["sink", "sand", "trap", "desert", "stuck"],
+      "charadesHint": "slowly sink into the floor looking panicked",
+      "passwordHint": "sink"
+    },
+    {
+      "id": "general-012",
+      "word": "AVALANCHE",
+      "tabooWords": ["snow", "mountain", "slide", "danger", "bury"],
+      "charadesHint": "sweep arms downhill in a massive wave",
+      "passwordHint": "snow"
+    },
+    {
+      "id": "general-013",
+      "word": "ESCALATOR",
+      "tabooWords": ["stairs", "moving", "up", "mall", "step"],
+      "charadesHint": "stand still and slowly rise while doing nothing",
+      "passwordHint": "moving"
+    },
+    {
+      "id": "general-014",
+      "word": "HAMMOCK",
+      "tabooWords": ["hang", "sleep", "relax", "rope", "swing"],
+      "charadesHint": "lie back in mid-air swaying gently",
+      "passwordHint": "swing"
+    },
+    {
+      "id": "general-015",
+      "word": "CATAPULT",
+      "tabooWords": ["launch", "medieval", "rock", "fling", "siege"],
+      "charadesHint": "load a giant arm then release it with a whoosh",
+      "passwordHint": "fling"
+    },
+    {
+      "id": "general-016",
+      "word": "PERISCOPE",
+      "tabooWords": ["submarine", "see", "tube", "spy", "peek"],
+      "charadesHint": "crouch down and raise one arm to peek above",
+      "passwordHint": "peek"
+    },
+    {
+      "id": "general-017",
+      "word": "SUNDIAL",
+      "tabooWords": ["time", "shadow", "sun", "ancient", "noon"],
+      "charadesHint": "stand like a post and point to where your shadow falls",
+      "passwordHint": "shadow"
+    },
+    {
+      "id": "general-018",
+      "word": "ABACUS",
+      "tabooWords": ["count", "beads", "math", "old", "calculate"],
+      "charadesHint": "slide invisible beads rapidly along rows",
+      "passwordHint": "beads"
+    },
+    {
+      "id": "general-019",
+      "word": "CHAMELEON",
+      "tabooWords": ["colour", "lizard", "change", "camouflage", "blend"],
+      "charadesHint": "freeze against a wall and slowly change pose",
+      "passwordHint": "camouflage"
+    },
+    {
+      "id": "general-020",
+      "word": "PLATYPUS",
+      "tabooWords": ["duck", "Australia", "mammal", "egg", "beaver"],
+      "charadesHint": "waddle with flat bill and flat tail dragging",
+      "passwordHint": "bill"
+    },
+    {
+      "id": "general-021",
+      "word": "NARWHAL",
+      "tabooWords": ["whale", "horn", "arctic", "sea", "tusk"],
+      "charadesHint": "swim gracefully with one finger pointing from forehead",
+      "passwordHint": "horn"
+    },
+    {
+      "id": "general-022",
+      "word": "PANGOLIN",
+      "tabooWords": ["scale", "armour", "animal", "roll", "Africa"],
+      "charadesHint": "curl into a tight ball on the floor",
+      "passwordHint": "scales"
+    },
+    {
+      "id": "general-023",
+      "word": "PIRANHA",
+      "tabooWords": ["fish", "teeth", "river", "Amazon", "bite"],
+      "charadesHint": "snap hands together rapidly like tiny vicious jaws",
+      "passwordHint": "teeth"
+    },
+    {
+      "id": "general-024",
+      "word": "TARANTULA",
+      "tabooWords": ["spider", "hairy", "venom", "big", "legs"],
+      "charadesHint": "creep all fingers slowly across a surface",
+      "passwordHint": "hairy"
+    },
+    {
+      "id": "general-025",
+      "word": "PORCUPINE",
+      "tabooWords": ["quill", "spike", "animal", "sharp", "prick"],
+      "charadesHint": "hunch over with fingers splayed outward all around",
+      "passwordHint": "quills"
+    },
+    {
+      "id": "general-026",
+      "word": "MEERKAT",
+      "tabooWords": ["stand", "Africa", "animal", "desert", "tunnel"],
+      "charadesHint": "stand bolt upright scanning the horizon nervously",
+      "passwordHint": "lookout"
+    },
+    {
+      "id": "general-027",
+      "word": "VENTRILOQUIST",
+      "tabooWords": ["dummy", "voice", "puppet", "speak", "lip"],
+      "charadesHint": "hold a puppet and talk without moving your lips",
+      "passwordHint": "dummy"
+    },
+    {
+      "id": "general-028",
+      "word": "HYPNOSIS",
+      "tabooWords": ["sleep", "trance", "mind", "watch", "swing"],
+      "charadesHint": "swing a pendulum and stare into someone's eyes",
+      "passwordHint": "trance"
+    },
+    {
+      "id": "general-029",
+      "word": "ORIGAMI",
+      "tabooWords": ["paper", "fold", "Japan", "crane", "art"],
+      "charadesHint": "carefully fold and crease invisible paper",
+      "passwordHint": "fold"
+    },
+    {
+      "id": "general-030",
+      "word": "KARAOKE",
+      "tabooWords": ["sing", "song", "microphone", "bar", "lyrics"],
+      "charadesHint": "belt into a mic reading words off a screen",
+      "passwordHint": "microphone"
+    },
+    {
+      "id": "general-031",
+      "word": "GRAFFITI",
+      "tabooWords": ["wall", "spray", "art", "street", "paint"],
+      "charadesHint": "shake a can and spray a big mural on the wall",
+      "passwordHint": "spray"
+    },
+    {
+      "id": "general-032",
+      "word": "SERENADE",
+      "tabooWords": ["sing", "love", "music", "outside", "guitar"],
+      "charadesHint": "strum a guitar under a window gazing upward",
+      "passwordHint": "guitar"
+    },
+    {
+      "id": "general-033",
+      "word": "BLIZZARD",
+      "tabooWords": ["snow", "storm", "wind", "cold", "whiteout"],
+      "charadesHint": "battle against howling wind throwing snow everywhere",
+      "passwordHint": "whiteout"
+    },
+    {
+      "id": "general-034",
+      "word": "MONSOON",
+      "tabooWords": ["rain", "season", "Asia", "flood", "heavy"],
+      "charadesHint": "get drenched as water pours down relentlessly",
+      "passwordHint": "downpour"
+    },
+    {
+      "id": "general-035",
+      "word": "MIRAGE",
+      "tabooWords": ["desert", "water", "illusion", "heat", "oasis"],
+      "charadesHint": "crawl desperately toward water that keeps vanishing",
+      "passwordHint": "illusion"
+    },
+    {
+      "id": "general-036",
+      "word": "GEYSER",
+      "tabooWords": ["water", "hot", "shoot", "ground", "steam"],
+      "charadesHint": "crouch low then explosively jet upward",
+      "passwordHint": "spout"
+    },
+    {
+      "id": "general-037",
+      "word": "STALACTITE",
+      "tabooWords": ["cave", "rock", "hang", "drip", "mineral"],
+      "charadesHint": "hang rigidly from a ceiling dripping slowly",
+      "passwordHint": "drip"
+    },
+    {
+      "id": "general-038",
+      "word": "WHIRLPOOL",
+      "tabooWords": ["water", "spin", "suck", "circle", "vortex"],
+      "charadesHint": "spiral your arm inward getting faster and faster",
+      "passwordHint": "vortex"
+    },
+    {
+      "id": "general-039",
+      "word": "FJORD",
+      "tabooWords": ["Norway", "water", "cliff", "narrow", "inlet"],
+      "charadesHint": "stand as a tall cliff with water flowing between",
+      "passwordHint": "Norway"
+    },
+    {
+      "id": "general-040",
+      "word": "LAGOON",
+      "tabooWords": ["water", "island", "shallow", "tropical", "reef"],
+      "charadesHint": "wade slowly through shallow crystal water",
+      "passwordHint": "tropical"
+    },
+    {
+      "id": "general-041",
+      "word": "TUNDRA",
+      "tabooWords": ["cold", "flat", "arctic", "frozen", "barren"],
+      "charadesHint": "trudge across a vast flat frozen wasteland",
+      "passwordHint": "frozen"
+    },
+    {
+      "id": "general-042",
+      "word": "PODIUM",
+      "tabooWords": ["stand", "speech", "winner", "platform", "medal"],
+      "charadesHint": "step up proudly and wave from the top step",
+      "passwordHint": "winner"
+    },
+    {
+      "id": "general-043",
+      "word": "AQUEDUCT",
+      "tabooWords": ["water", "Roman", "bridge", "channel", "arch"],
+      "charadesHint": "form a long arched bridge carrying flowing water",
+      "passwordHint": "Roman"
+    },
+    {
+      "id": "general-044",
+      "word": "DRAWBRIDGE",
+      "tabooWords": ["castle", "moat", "pull", "cross", "chain"],
+      "charadesHint": "slowly raise your arms like a bridge lifting up",
+      "passwordHint": "moat"
+    },
+    {
+      "id": "general-045",
+      "word": "GARGOYLE",
+      "tabooWords": ["stone", "church", "scary", "roof", "gothic"],
+      "charadesHint": "crouch on all fours frozen in a grotesque snarl",
+      "passwordHint": "stone"
+    },
+    {
+      "id": "general-046",
+      "word": "TAPESTRY",
+      "tabooWords": ["weave", "wall", "thread", "picture", "medieval"],
+      "charadesHint": "weave invisible threads into a grand wall hanging",
+      "passwordHint": "weave"
+    },
+    {
+      "id": "general-047",
+      "word": "QUILL",
+      "tabooWords": ["write", "feather", "ink", "old", "pen"],
+      "charadesHint": "dip a feather in ink and write with a flourish",
+      "passwordHint": "feather"
+    },
+    {
+      "id": "general-048",
+      "word": "HOURGLASS",
+      "tabooWords": ["sand", "time", "flip", "minutes", "timer"],
+      "charadesHint": "flip something over and watch it anxiously drain",
+      "passwordHint": "sand"
+    },
+    {
+      "id": "general-049",
+      "word": "KALEIDOSCOPE",
+      "tabooWords": ["colour", "pattern", "tube", "turn", "mirror"],
+      "charadesHint": "peer through a tube and twist to see shifting patterns",
+      "passwordHint": "pattern"
+    },
+    {
+      "id": "general-050",
+      "word": "ACUPUNCTURE",
+      "tabooWords": ["needle", "Chinese", "pain", "heal", "pressure"],
+      "charadesHint": "carefully insert tiny needles all over someone",
+      "passwordHint": "needles"
+    },
+    {
+      "id": "general-051",
+      "word": "ARCHAEOLOGY",
+      "tabooWords": ["dig", "ancient", "history", "bones", "excavate"],
+      "charadesHint": "brush dust off a buried artefact very carefully",
+      "passwordHint": "excavate"
+    },
+    {
+      "id": "general-052",
+      "word": "CARTOGRAPHY",
+      "tabooWords": ["map", "draw", "geography", "chart", "explore"],
+      "charadesHint": "unroll a huge map and trace routes across it",
+      "passwordHint": "map"
+    },
+    {
+      "id": "general-053",
+      "word": "TIGHTROPE",
+      "tabooWords": ["balance", "walk", "wire", "circus", "fall"],
+      "charadesHint": "arms out wide wobbling one foot in front of the other",
+      "passwordHint": "balance"
+    },
+    {
+      "id": "general-054",
+      "word": "PICKPOCKET",
+      "tabooWords": ["steal", "thief", "crowd", "wallet", "sneaky"],
+      "charadesHint": "bump into someone and slip something from their pocket",
+      "passwordHint": "wallet"
+    },
+    {
+      "id": "general-055",
+      "word": "MIME",
+      "tabooWords": ["silent", "act", "invisible", "Paris", "face"],
+      "charadesHint": "walk against wind and push against a glass wall",
+      "passwordHint": "silent"
+    },
+    {
+      "id": "general-056",
+      "word": "CONDUCTOR",
+      "tabooWords": ["orchestra", "baton", "music", "wave", "lead"],
+      "charadesHint": "wave a baton dramatically leading a grand orchestra",
+      "passwordHint": "baton"
+    },
+    {
+      "id": "general-057",
+      "word": "SLEEPWALKING",
+      "tabooWords": ["sleep", "walk", "night", "dream", "unconscious"],
+      "charadesHint": "wander with eyes closed and arms out bumping into things",
+      "passwordHint": "dream"
+    },
+    {
+      "id": "general-058",
+      "word": "STAMPEDE",
+      "tabooWords": ["run", "herd", "cattle", "trample", "wild"],
+      "charadesHint": "thunder across the floor as part of a wild herd",
+      "passwordHint": "herd"
+    },
+    {
+      "id": "general-059",
+      "word": "TIGHTROPE WALKER",
+      "tabooWords": ["circus", "balance", "high", "wire", "fall"],
+      "charadesHint": "inch across with arms out looking terrified below",
+      "passwordHint": "circus"
+    },
+    {
+      "id": "general-060",
+      "word": "SANDCASTLE",
+      "tabooWords": ["beach", "sand", "build", "bucket", "sea"],
+      "charadesHint": "pack sand into a bucket and flip it with ceremony",
+      "passwordHint": "beach"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { styles } from "./styles";
+import { styles } from "./Decks.styles";
 
 interface Props {
   prompt: string;

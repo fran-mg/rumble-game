@@ -1,7 +1,7 @@
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
-import { styles } from "./styles";
+import { styles } from "./Decks.styles";
 
 export default function EmptyState() {
   return (

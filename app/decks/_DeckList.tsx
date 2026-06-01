@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { Deck } from "../../stores/useDeckStore";
 import DeckCard from "./_DeckCard";
 import EmptyState from "./_EmptyState";
-import { styles } from "./styles";
+import { styles } from "./Decks.styles";
 
 interface Props {
   decks: Deck[];

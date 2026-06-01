@@ -2,7 +2,7 @@ import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Deck } from "../../stores/useDeckStore";
-import { styles } from "./styles";
+import { styles } from "./Decks.styles";
 
 interface Props {
   deck: Deck;

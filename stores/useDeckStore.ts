@@ -1,4 +1,3 @@
-// stores/useDeckStore.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -19,16 +18,14 @@ export interface Card {
   id: number;
   deck_id: number;
   word: string;
-  taboo_words: string | null;
-  difficulty: string;
-  hint: string | null;
+  tabooWords: string | null; // JSON string → parse to string[]
+  charadesHint: string | null;
+  passwordHint: string | null;
   is_hidden: number;
   times_played: number;
   times_guessed: number;
   created_at: number;
 }
-
-// ── Store interface ───────────────────────────────────────────────────────────
 
 interface DeckState {
   decks: Deck[];
@@ -46,10 +43,6 @@ interface DeckState {
   deleteDeck: (deckId: string) => Promise<void>;
 }
 
-// ── Helper ────────────────────────────────────────────────────────────────────
-// DeckRow is a superset of Deck; pick only the public fields so the store
-// never leaks internal DB columns (source, is_favorited, etc.) into UI code.
-
 function toPublicDeck(row: DeckRow): Deck {
   return {
     id: row.id,
@@ -63,8 +56,6 @@ function toPublicDeck(row: DeckRow): Deck {
   };
 }
 
-// ── Store ─────────────────────────────────────────────────────────────────────
-
 export const useDeckStore = create<DeckState>()(
   persist(
     (set, get) => ({
@@ -72,14 +63,12 @@ export const useDeckStore = create<DeckState>()(
       selectedDeckIds: [],
       currentCards: [],
 
-      // ── Load ───────────────────────────────────────────────────────────────
       loadDecks: async () => {
         const rows = await dbHelpers.getAllDecks();
         set({ decks: rows.map(toPublicDeck) });
       },
 
-      // ── Selection ──────────────────────────────────────────────────────────
-      selectDeck: (deckId: string) => {
+      selectDeck: (deckId) => {
         set((state) => ({
           selectedDeckIds: state.selectedDeckIds.includes(deckId)
             ? state.selectedDeckIds
@@ -87,13 +76,13 @@ export const useDeckStore = create<DeckState>()(
         }));
       },
 
-      deselectDeck: (deckId: string) => {
+      deselectDeck: (deckId) => {
         set((state) => ({
           selectedDeckIds: state.selectedDeckIds.filter((id) => id !== deckId),
         }));
       },
 
-      toggleDeckSelection: (deckId: string) => {
+      toggleDeckSelection: (deckId) => {
         set((state) => ({
           selectedDeckIds: state.selectedDeckIds.includes(deckId)
             ? state.selectedDeckIds.filter((id) => id !== deckId)
@@ -111,14 +100,12 @@ export const useDeckStore = create<DeckState>()(
         set({ selectedDeckIds: [] });
       },
 
-      // ── Cards ──────────────────────────────────────────────────────────────
       loadCardsForSelectedDecks: async () => {
         const { selectedDeckIds } = get();
         if (selectedDeckIds.length === 0) {
           set({ currentCards: [] });
           return;
         }
-        // DB still uses integer PKs internally; coerce once here at the boundary
         const numericIds = selectedDeckIds
           .map((id) => Number(id))
           .filter((n) => !Number.isNaN(n) && n > 0);
@@ -129,13 +116,12 @@ export const useDeckStore = create<DeckState>()(
         set({ currentCards: cards });
       },
 
-      // ── Mutations ──────────────────────────────────────────────────────────
-      createDeck: async (name: string, category: string) => {
+      createDeck: async (name, category) => {
         await dbHelpers.createDeck(name, category, "user-created");
         await get().loadDecks();
       },
 
-      deleteDeck: async (deckId: string) => {
+      deleteDeck: async (deckId) => {
         await dbHelpers.deleteDeck(Number(deckId));
         set((state) => ({
           selectedDeckIds: state.selectedDeckIds.filter((id) => id !== deckId),
@@ -146,7 +132,6 @@ export const useDeckStore = create<DeckState>()(
     {
       name: "deck-store",
       storage: createJSONStorage(() => AsyncStorage),
-      // Only persist the selection — decks are always re-hydrated from SQLite
       partialize: (state) => ({ selectedDeckIds: state.selectedDeckIds }),
     },
   ),

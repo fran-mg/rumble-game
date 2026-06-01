@@ -1,8 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 
-// Bump DB name to force fresh schema (dev only — use migrations in production)
-const DB_NAME = "articulate_v4.db";
+const DB_NAME = "articulate_v5.db"; // bumped — schema changes to cards table
 
 let db: SQLite.SQLiteDatabase | null = null;
 if (Platform.OS !== "web") {
@@ -24,7 +23,7 @@ export const initDatabase = async (): Promise<void> => {
         source         TEXT    DEFAULT 'bundled',
         description    TEXT    DEFAULT '',
         icon           TEXT    DEFAULT 'Layers',
-        color          TEXT    DEFAULT '#3B82F6',
+        color          TEXT    DEFAULT '#6366f1',
         url            TEXT    DEFAULT '',
         created_at     INTEGER DEFAULT (strftime('%s', 'now')),
         updated_at     INTEGER DEFAULT (strftime('%s', 'now')),
@@ -34,17 +33,21 @@ export const initDatabase = async (): Promise<void> => {
       );`,
 
       // ── CARDS ──────────────────────────────────────────────────────────────
+      // Column names now match the JSON format exactly:
+      //   taboo_words  → tabooWords (stored as JSON array string)
+      //   hint         → split into charades_hint + password_hint
+      //   difficulty   removed from card level (lives on the deck)
       `CREATE TABLE IF NOT EXISTS cards (
-        id            INTEGER PRIMARY KEY AUTOINCREMENT,
-        deck_id       INTEGER NOT NULL,
-        word          TEXT    NOT NULL,
-        taboo_words   TEXT,
-        difficulty    TEXT    DEFAULT 'medium',
-        hint          TEXT,
-        is_hidden     INTEGER DEFAULT 0,
-        times_played  INTEGER DEFAULT 0,
-        times_guessed INTEGER DEFAULT 0,
-        created_at    INTEGER DEFAULT (strftime('%s', 'now')),
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        deck_id         INTEGER NOT NULL,
+        word            TEXT    NOT NULL,
+        taboo_words     TEXT,
+        chardes_hint    TEXT    DEFAULT '',
+        password_hint   TEXT    DEFAULT '',
+        is_hidden       INTEGER DEFAULT 0,
+        times_played    INTEGER DEFAULT 0,
+        times_guessed   INTEGER DEFAULT 0,
+        created_at      INTEGER DEFAULT (strftime('%s', 'now')),
         FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE
       );`,
 
@@ -186,27 +189,14 @@ const seedInitialData = async (): Promise<void> => {
 
 // ─── SHARED TYPES ─────────────────────────────────────────────────────────────
 
-/**
- * A Participant is the single competitive unit in any game mode.
- *
- *   solo mode → type = 'player'
- *   team mode → type = 'team'
- */
 export interface Participant {
-  /** Locally generated (Date.now()-based). Not a DB primary key. */
   id: number;
   name: string;
   color: string;
   type: "player" | "team";
 }
 
-/**
- * Deck shape returned by all dbHelpers deck queries.
- * `id` is a string so it matches the store / UI Deck interface directly —
- * SQLite AUTOINCREMENT values are cast via the SELECT alias.
- */
 export interface DeckRow {
-  /** CAST to TEXT in the SELECT so consumers always get a string. */
   id: string;
   name: string;
   category: string;
@@ -214,9 +204,7 @@ export interface DeckRow {
   icon: string;
   color: string;
   url: string;
-  /** Aliased from card_count in the SELECT. */
   cardCount: number;
-  // ── extra DB-only columns (not in the public Deck interface) ──
   source: string;
   is_favorited: number;
   download_count: number;
@@ -224,13 +212,15 @@ export interface DeckRow {
   updated_at: number;
 }
 
+// Card shape matching the JSON format and the updated DB schema.
+// tabooWords is stored as a JSON string in DB; consumers parse it.
 export interface CardRow {
   id: number;
   deck_id: number;
   word: string;
-  taboo_words: string | null;
-  difficulty: string;
-  hint: string | null;
+  tabooWords: string | null; // JSON string — parse with JSON.parse()
+  charadesHint: string | null;
+  passwordHint: string | null;
   is_hidden: number;
   times_played: number;
   times_guessed: number;
@@ -238,24 +228,37 @@ export interface CardRow {
 }
 
 // ─── DECK SELECT FRAGMENT ─────────────────────────────────────────────────────
-// Single source of truth for the column list / aliases used in every deck query.
-// Casting id to TEXT and aliasing card_count → cardCount means DeckRow matches
-// the public Deck interface without any post-processing in the store.
 
 const DECK_SELECT = `
   CAST(id AS TEXT) AS id,
   name,
-  COALESCE(category,    '')         AS category,
-  COALESCE(description, '')         AS description,
-  COALESCE(icon,        'Layers')   AS icon,
-  COALESCE(color,       '#3B82F6')  AS color,
-  COALESCE(url,         '')         AS url,
-  card_count                        AS cardCount,
+  COALESCE(category,    '')        AS category,
+  COALESCE(description, '')        AS description,
+  COALESCE(icon,        'Layers')  AS icon,
+  COALESCE(color,       '#6366f1') AS color,
+  COALESCE(url,         '')        AS url,
+  card_count                       AS cardCount,
   source,
   is_favorited,
   download_count,
   created_at,
   updated_at
+`;
+
+// ─── CARD SELECT FRAGMENT ─────────────────────────────────────────────────────
+// Aliases DB column names to camelCase to match the JSON format and CardRow type.
+
+const CARD_SELECT = `
+  id,
+  deck_id,
+  word,
+  taboo_words    AS tabooWords,
+  chardes_hint   AS charadesHint,
+  password_hint  AS passwordHint,
+  is_hidden,
+  times_played,
+  times_guessed,
+  created_at
 `;
 
 // ─── DB HELPERS ───────────────────────────────────────────────────────────────
@@ -282,7 +285,7 @@ export const dbHelpers = {
     category: string,
     source: string = "user-created",
     icon: string = "Layers",
-    color: string = "#3B82F6",
+    color: string = "#6366f1",
     description: string = "",
     url: string = "",
   ): Promise<number | null> {
@@ -341,7 +344,7 @@ export const dbHelpers = {
   async getCardsForDeck(deckId: number): Promise<CardRow[]> {
     if (!db) return [];
     return db.getAllAsync(
-      "SELECT * FROM cards WHERE deck_id = ? ORDER BY word ASC;",
+      `SELECT ${CARD_SELECT} FROM cards WHERE deck_id = ? ORDER BY word ASC;`,
       [deckId],
     ) as Promise<CardRow[]>;
   },
@@ -350,14 +353,14 @@ export const dbHelpers = {
     deckId: number,
     word: string,
     tabooWords: string[] = [],
-    difficulty: string = "medium",
-    hint: string = "",
+    charadesHint: string = "",
+    passwordHint: string = "",
   ): Promise<number | null> {
     if (!db) return null;
     const result = await db.runAsync(
-      `INSERT INTO cards (deck_id, word, taboo_words, difficulty, hint)
+      `INSERT INTO cards (deck_id, word, taboo_words, chardes_hint, password_hint)
        VALUES (?, ?, ?, ?, ?);`,
-      [deckId, word, JSON.stringify(tabooWords), difficulty, hint],
+      [deckId, word, JSON.stringify(tabooWords), charadesHint, passwordHint],
     );
     await this._refreshDeckCardCount(deckId);
     return result.lastInsertRowId;
@@ -368,14 +371,24 @@ export const dbHelpers = {
     fields: Partial<
       Pick<
         CardRow,
-        "word" | "taboo_words" | "difficulty" | "hint" | "is_hidden"
+        "word" | "tabooWords" | "charadesHint" | "passwordHint" | "is_hidden"
       >
     >,
   ): Promise<void> {
     if (!db) return;
+    // Map camelCase field names back to DB snake_case column names
+    const columnMap: Record<string, string> = {
+      tabooWords: "taboo_words",
+      charadesHint: "chardes_hint",
+      passwordHint: "password_hint",
+      is_hidden: "is_hidden",
+      word: "word",
+    };
     const entries = Object.entries(fields);
     if (entries.length === 0) return;
-    const setClauses = entries.map(([k]) => `${k} = ?`).join(", ");
+    const setClauses = entries
+      .map(([k]) => `${columnMap[k] ?? k} = ?`)
+      .join(", ");
     const values = entries.map(([, v]) => v);
     await db.runAsync(`UPDATE cards SET ${setClauses} WHERE id = ?;`, [
       ...values,
@@ -402,14 +415,13 @@ export const dbHelpers = {
     if (!db || deckIds.length === 0) return [];
     const placeholders = deckIds.map(() => "?").join(",");
     return db.getAllAsync(
-      `SELECT * FROM cards
+      `SELECT ${CARD_SELECT} FROM cards
        WHERE deck_id IN (${placeholders}) AND is_hidden = 0
        ORDER BY RANDOM();`,
       deckIds,
     ) as Promise<CardRow[]>;
   },
 
-  /** Keeps decks.card_count accurate after any card mutation. */
   async _refreshDeckCardCount(deckId: number): Promise<void> {
     if (!db) return;
     await db.runAsync(
@@ -503,7 +515,6 @@ export const dbHelpers = {
          VALUES (?, ?, ?, ?);`,
         [roundId, cardId, result, timeSpent],
       );
-
       if (result === "guessed") {
         await db!.runAsync(
           `UPDATE rounds
@@ -547,7 +558,6 @@ export const dbHelpers = {
     if (!db) return;
     const positions: Record<number, number> = {};
     for (const p of participants) positions[p.id] = 0;
-
     await db.runAsync(
       `INSERT INTO board_state
          (game_id, board_size, tile_categories, participant_positions, current_participant_id)
@@ -574,12 +584,10 @@ export const dbHelpers = {
       [gameId],
     )) as { participant_positions: string } | null;
     if (!row) return;
-
     const positions: Record<number, number> = JSON.parse(
       row.participant_positions,
     );
     positions[participantId] = newPosition;
-
     await db.runAsync(
       `UPDATE board_state
        SET participant_positions = ?, current_participant_id = ?

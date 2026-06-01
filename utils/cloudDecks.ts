@@ -11,6 +11,28 @@ export interface CloudDeckIndexItem {
   cardCount: number;
 }
 
+// JSON shape of an individual downloaded deck file
+interface CloudDeckCard {
+  id: string;
+  word: string;
+  tabooWords: string[];
+  charadesHint?: string;
+  passwordHint?: string;
+}
+
+interface CloudDeckFile {
+  id: string;
+  name: string;
+  category: string;
+  icon: string;
+  color: string;
+  description: string;
+  difficulty: string;
+  tags: string[];
+  cardCount: number;
+  cards: CloudDeckCard[];
+}
+
 const INDEX_URL =
   "https://raw.githubusercontent.com/fran-mg/articulate-decks/main/decks-index.json";
 
@@ -30,21 +52,18 @@ export const downloadAndImportDeck = async (
   deckItem: CloudDeckIndexItem,
 ): Promise<boolean> => {
   if (!db) return false;
-
   try {
-    // 1. Fetch the actual deck JSON
     const response = await fetch(deckItem.url);
     if (!response.ok) throw new Error("Failed to fetch deck file");
-    const deckData = await response.json();
+    const deckData = (await response.json()) as CloudDeckFile;
 
-    // 2. Insert into local SQLite database using a transaction for speed
     await db.withTransactionAsync(async () => {
       const deckId = await dbHelpers.createDeck(
         deckData.name,
         deckData.category,
-        "community", // Source
+        "community",
         deckData.icon || "DownloadCloud",
-        deckData.color || "#3B82F6",
+        deckData.color || "#6366f1",
         deckData.description || "",
       );
 
@@ -53,9 +72,9 @@ export const downloadAndImportDeck = async (
           await dbHelpers.createCard(
             deckId,
             card.word,
-            card.taboo_words || [],
-            card.difficulty || "medium",
-            card.hint || "",
+            card.tabooWords,
+            card.charadesHint ?? "",
+            card.passwordHint ?? "",
           );
         }
       }

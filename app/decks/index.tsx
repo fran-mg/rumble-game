@@ -13,7 +13,7 @@ import DeckList from "./_DeckList";
 import PageHeader from "./_PageHeader";
 import CloudDecksModal from "./_DownloadDecks";
 import EditDeckModal from "./_EditDeck";
-import { styles } from "./styles";
+import { styles } from "./Decks.styles";
 
 export default function DecksScreen() {
   const { decks, loadDecks, deleteDeck } = useDeckStore();
