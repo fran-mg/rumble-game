@@ -139,19 +139,14 @@ export default function DeckSelector({
                     <View
                       style={[
                         styles.deckIcon,
-                        isSelected
-                          ? {
-                              backgroundColor: accent.colorBg,
-                              borderColor: accent.colorBorder,
-                            }
-                          : {
-                              backgroundColor: `${deckColor}22`,
-                              borderColor: `${deckColor}44`,
-                            },
+                        {
+                          backgroundColor: accent.colorBg,
+                          borderColor: accent.colorBorder,
+                        },
                       ]}
                     >
                       <DeckIcon
-                        color={isSelected ? accent.color : deckColor}
+                        color={accent.color}
                         size={18}
                         strokeWidth={2}
                       />
