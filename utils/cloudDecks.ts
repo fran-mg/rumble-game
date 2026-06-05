@@ -48,24 +48,66 @@ export const fetchCloudDecksIndex = async (): Promise<CloudDeckIndexItem[]> => {
   }
 };
 
+// Helper to generate versioned deck name if name already exists
+const getVersionedDeckName = (
+  baseName: string,
+  existingDecks: any[],
+): string => {
+  const existingNames = existingDecks.map((d) => d.name);
+
+  // If base name doesn't exist, use it
+  if (!existingNames.includes(baseName)) {
+    return baseName;
+  }
+
+  // Escape special regex characters in baseName
+  const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const versionRegex = new RegExp(`^${escapedBase}v(\\d+)$`);
+
+  // Find all existing versions
+  const versions = existingNames
+    .map((name) => {
+      const match = name.match(versionRegex);
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter((v) => v > 0);
+
+  // If no v2 exists, use it
+  if (!existingNames.includes(`${baseName}v2`)) {
+    return `${baseName}v2`;
+  }
+
+  // Find highest version and increment
+  const maxVersion = Math.max(...versions);
+  return `${baseName}v${maxVersion + 1}`;
+};
+
 export const downloadAndImportDeck = async (
   deckItem: CloudDeckIndexItem,
-): Promise<boolean> => {
-  if (!db) return false;
+  installedDecks: any[],
+): Promise<{ success: boolean; deckName?: string }> => {
+  if (!db) return { success: false };
   try {
     const response = await fetch(deckItem.url);
     if (!response.ok) throw new Error("Failed to fetch deck file");
     const deckData = (await response.json()) as CloudDeckFile;
 
+    // Generate versioned name if deck already exists
+    const finalDeckName = getVersionedDeckName(deckData.name, installedDecks);
+
+    let createdDeckId: number | null = null;
+
     await db.withTransactionAsync(async () => {
       const deckId = await dbHelpers.createDeck(
-        deckData.name,
+        finalDeckName, // Use versioned name
         deckData.category,
         "community",
         deckData.icon || "DownloadCloud",
         deckData.color || "#6366f1",
         deckData.description || "",
       );
+
+      createdDeckId = deckId;
 
       if (deckId && deckData.cards) {
         for (const card of deckData.cards) {
@@ -80,12 +122,12 @@ export const downloadAndImportDeck = async (
       }
     });
 
-    return true;
+    return { success: true, deckName: finalDeckName };
   } catch (error) {
     console.error(
       `Failed to download and import deck ${deckItem.name}:`,
       error,
     );
-    return false;
+    return { success: false };
   }
 };

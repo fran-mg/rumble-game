@@ -24,6 +24,17 @@ interface CloudDecksModalProps {
   installedDecks: any[];
 }
 
+// Helper to reliably map icon names
+const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
+  if (!iconName) return Fallback;
+  const pascal = iconName.replace(/(^\w|-\w)/g, (clear) =>
+    clear.replace(/-/, "").toUpperCase(),
+  );
+  return (
+    (LucideIcons as any)[iconName] || (LucideIcons as any)[pascal] || Fallback
+  );
+};
+
 export default function CloudDecksModal({
   visible,
   onClose,
@@ -54,19 +65,17 @@ export default function CloudDecksModal({
   };
 
   const handleDownload = async (cloudDeck: CloudDeckIndexItem) => {
-    if (installedDecks.some((d) => d.name === cloudDeck.name)) {
-      Alert.alert(
-        "Already Installed",
-        "You already have a deck with this name.",
-      );
-      return;
-    }
     setDownloadingId(cloudDeck.id);
-    const success = await downloadAndImportDeck(cloudDeck);
+    const result = await downloadAndImportDeck(cloudDeck, installedDecks);
     setDownloadingId(null);
-    if (success) {
+
+    if (result.success) {
       await onDecksUpdated();
-      Alert.alert("Downloaded!", `${cloudDeck.name} has been added.`);
+      const message =
+        result.deckName === cloudDeck.name
+          ? `${cloudDeck.name} has been added.`
+          : `Downloaded as "${result.deckName}" (original name already existed).`;
+      Alert.alert("Downloaded!", message);
     } else {
       Alert.alert("Download Failed", "Something went wrong. Please try again.");
     }
@@ -121,8 +130,10 @@ export default function CloudDecksModal({
                   (d) => d.name === cloudDeck.name,
                 );
                 const isDownloading = downloadingId === cloudDeck.id;
-                const CloudIcon =
-                  (LucideIcons as any)[cloudDeck.icon] || LucideIcons.Cloud;
+                const CloudIcon = getLucideIcon(
+                  cloudDeck.icon,
+                  LucideIcons.Cloud,
+                );
 
                 return (
                   <View key={cloudDeck.id} style={styles.deckCard}>
@@ -175,31 +186,39 @@ export default function CloudDecksModal({
                     {/* Description */}
                     <Text style={styles.deckDesc}>{cloudDeck.description}</Text>
 
-                    {/* Download button */}
-                    {!isInstalled && (
-                      <TouchableOpacity
-                        onPress={() => handleDownload(cloudDeck)}
-                        disabled={isDownloading}
-                        activeOpacity={0.75}
+                    {/* Download button - always show, with different text if installed */}
+                    <TouchableOpacity
+                      onPress={() => handleDownload(cloudDeck)}
+                      disabled={isDownloading}
+                      activeOpacity={0.75}
+                      style={[
+                        styles.downloadBtn,
+                        isDownloading && styles.downloadBtnLoading,
+                        isInstalled && styles.downloadBtnRedownload,
+                      ]}
+                    >
+                      {isDownloading ? (
+                        <ActivityIndicator size="small" color="#818cf8" />
+                      ) : (
+                        <LucideIcons.Download
+                          size={14}
+                          color={isInstalled ? "#94a3b8" : "#a5b4fc"}
+                          strokeWidth={2.5}
+                        />
+                      )}
+                      <Text
                         style={[
-                          styles.downloadBtn,
-                          isDownloading && styles.downloadBtnLoading,
+                          styles.downloadBtnText,
+                          isInstalled && styles.downloadBtnTextRedownload,
                         ]}
                       >
-                        {isDownloading ? (
-                          <ActivityIndicator size="small" color="#818cf8" />
-                        ) : (
-                          <LucideIcons.Download
-                            size={14}
-                            color="#a5b4fc"
-                            strokeWidth={2.5}
-                          />
-                        )}
-                        <Text style={styles.downloadBtnText}>
-                          {isDownloading ? "Downloading..." : "Download Pack"}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                        {isDownloading
+                          ? "Downloading..."
+                          : isInstalled
+                            ? "Download Again"
+                            : "Download Pack"}
+                      </Text>
+                    </TouchableOpacity>
 
                     {/* Colour strip */}
                     <View
@@ -383,11 +402,19 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     borderStyle: "solid",
   },
+  downloadBtnRedownload: {
+    borderStyle: "solid",
+    borderColor: "rgba(148,163,184,0.3)",
+    backgroundColor: "rgba(148,163,184,0.08)",
+  },
   downloadBtnText: {
     color: "#a5b4fc",
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0.3,
+  },
+  downloadBtnTextRedownload: {
+    color: "#94a3b8",
   },
   colorStrip: {
     position: "absolute",
