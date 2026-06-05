@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./Decks.styles";
 
 interface Props {
@@ -28,10 +28,19 @@ export default function PageHeader({ onCloudPress }: Props) {
 
       <TouchableOpacity
         onPress={onCloudPress}
-        style={styles.iconBtn}
-        activeOpacity={0.75}
+        style={styles.downloadButton}
+        activeOpacity={0.8}
       >
-        <LucideIcons.CloudDownload color="#cbd5e1" size={18} strokeWidth={2} />
+        <View style={styles.downloadGlow} />
+        <LucideIcons.CloudDownload
+          color="#a5b4fc"
+          size={18}
+          strokeWidth={2.5}
+        />
+        <View style={styles.downloadTextBlock}>
+          <Text style={styles.downloadLabel}>Browse & Download</Text>
+          <Text style={styles.downloadSublabel}>Community Packs</Text>
+        </View>
       </TouchableOpacity>
     </View>
   );
