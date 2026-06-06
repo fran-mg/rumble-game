@@ -3,7 +3,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -26,6 +25,7 @@ import DeckSelector from "./_DeckSelector";
 import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
 import TimerSelector from "./_TimerSelector";
+import { useAppAlert } from "../../_AppAlert"; // Updated import to include underscore
 
 export default function SettingsScreen() {
   const params = useLocalSearchParams();
@@ -44,6 +44,8 @@ export default function SettingsScreen() {
   } = useDeckStore();
   const gameStore = useGameStore();
   const { participants, initRoster } = useRosterStore();
+
+  const { showAlert, AlertRender } = useAppAlert();
 
   const scrollRef = useRef<any>(null);
   const cachedTeamsRef = useRef<Participant[] | null>(null);
@@ -106,13 +108,13 @@ export default function SettingsScreen() {
     await useDeckStore.getState().loadCardsForSelectedDecks();
     const cards = useDeckStore.getState().currentCards;
     if (cards.length === 0) {
-      Alert.alert("No Cards", "Please select at least one deck with cards.");
+      showAlert("No Cards", "Please select at least one deck with cards.");
       setIsDecksExpanded(true);
       return;
     }
     const named = participants.filter((p) => p.name.trim().length > 0);
     if (named.length < 2) {
-      Alert.alert(
+      showAlert(
         "Not enough participants",
         `You need at least 2 ${playStyle === "team" ? "teams" : "players"}.`,
       );
@@ -263,6 +265,8 @@ export default function SettingsScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+
+      {AlertRender}
     </SafeAreaView>
   );
 }

@@ -1,12 +1,13 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Alert, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeckStore } from "../../stores/useDeckStore";
 import { generateDeckViaAI } from "../../utils/aiGenerator";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
 import { Deck } from "../../stores/useDeckStore";
 import { syncCommunityDecksMeta } from "../../utils/cloudDecks";
+import { useAppAlert } from "../_AppAlert";
 
 import AIForgeCard from "./_AIForgeCard";
 import CategoryFilter from "./_CategoryFilter";
@@ -18,6 +19,7 @@ import { styles } from "./Decks.styles";
 
 export default function DecksScreen() {
   const { decks, loadDecks, deleteDeck } = useDeckStore();
+  const { showAlert, AlertRender } = useAppAlert();
 
   const [activeTab, setActiveTab] = useState<string>("all");
   const [aiPrompt, setAiPrompt] = useState<string>("");
@@ -53,9 +55,9 @@ export default function DecksScreen() {
     if (result.success) {
       setAiPrompt("");
       await loadDecks();
-      Alert.alert("Pack Created", "Your custom card pack has been added.");
+      showAlert("Pack Created", "Your custom card pack has been added.");
     } else {
-      Alert.alert("Generation Failed", result.error ?? "Review network logs.");
+      showAlert("Generation Failed", result.error ?? "Review network logs.");
     }
   };
 
@@ -112,6 +114,8 @@ export default function DecksScreen() {
         onClose={() => setEditingDeck(null)}
         onDecksUpdated={loadDecks}
       />
+
+      {AlertRender}
     </SafeAreaView>
   );
 }

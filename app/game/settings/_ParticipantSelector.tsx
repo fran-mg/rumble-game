@@ -1,15 +1,17 @@
 import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   NestableDraggableFlatList,
   RenderItemParams,
+  ScaleDecorator, // Added this import
 } from "react-native-draggable-flatlist";
 import { PlayStyle } from "../../../stores/useGameStore";
 import { useRosterStore } from "../../../stores/useRosterStore";
 import { ModeAccent } from "../../../utils/_modeTheme";
 import { Participant } from "../../../utils/database";
 import ParticipantItem from "./_ParticipantItem";
+import { useAppAlert } from "../../_AppAlert"; // Updated import to include underscore
 
 interface ParticipantSelectorProps {
   playStyle: PlayStyle;
@@ -31,6 +33,8 @@ export default function ParticipantSelector({
     deleteParticipant,
     reorderParticipants,
   } = useRosterStore();
+
+  const { showAlert, AlertRender } = useAppAlert();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -60,7 +64,7 @@ export default function ParticipantSelector({
   const handleConfirmEdit = () => {
     const trimmed = editName.trim();
     if (!trimmed) {
-      Alert.alert("Name required", `Please give this ${label} a name.`);
+      showAlert("Name required", `Please give this ${label} a name.`);
       return;
     }
     updateParticipant(editingId!, trimmed);
@@ -76,7 +80,7 @@ export default function ParticipantSelector({
 
   const handleDelete = (id: number) => {
     if (participants.length <= 1) {
-      Alert.alert("Can't remove", `You need at least one ${label}.`);
+      showAlert("Can't remove", `You need at least one ${label}.`);
       return;
     }
     deleteParticipant(id);
@@ -85,7 +89,7 @@ export default function ParticipantSelector({
   const handleAdd = () => {
     // If we're currently editing a brand-new unnamed item, force naming it first
     if (isNewItemRef.current && editingId !== null) {
-      Alert.alert(
+      showAlert(
         "Name required",
         `Please name the current ${label} before adding another.`,
       );
@@ -94,7 +98,7 @@ export default function ParticipantSelector({
 
     // If editing an existing item with no name typed yet, block too
     if (editingId !== null && editName.trim() === "") {
-      Alert.alert(
+      showAlert(
         "Name required",
         `Please finish naming the current ${label} before adding another.`,
       );
@@ -118,18 +122,22 @@ export default function ParticipantSelector({
     }, 50);
   };
 
+  // Wrapped the custom component in ScaleDecorator so DraggableFlatList
+  // has a Native Component to hook its measurements onto.
   const renderItem = (params: RenderItemParams<Participant>) => (
-    <ParticipantItem
-      {...params}
-      playStyle={playStyle}
-      editingId={editingId}
-      editName={editName}
-      onEditNameChange={setEditName}
-      onBeginEdit={handleBeginEdit}
-      onConfirmEdit={handleConfirmEdit}
-      onCancelEdit={handleCancelEdit}
-      onDelete={handleDelete}
-    />
+    <ScaleDecorator>
+      <ParticipantItem
+        {...params}
+        playStyle={playStyle}
+        editingId={editingId}
+        editName={editName}
+        onEditNameChange={setEditName}
+        onBeginEdit={handleBeginEdit}
+        onConfirmEdit={handleConfirmEdit}
+        onCancelEdit={handleCancelEdit}
+        onDelete={handleDelete}
+      />
+    </ScaleDecorator>
   );
 
   return (
@@ -257,6 +265,8 @@ export default function ParticipantSelector({
           </Text>
         </TouchableOpacity>
       </View>
+
+      {AlertRender}
     </View>
   );
 }

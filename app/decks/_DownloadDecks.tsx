@@ -2,7 +2,6 @@ import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
   downloadAndImportDeck,
   fetchCloudDecksIndex,
 } from "../../utils/cloudDecks";
+import { useAppAlert } from "../AppAlert";
 
 interface CloudDecksModalProps {
   visible: boolean;
@@ -50,6 +50,8 @@ export default function CloudDecksModal({
   const [isFetching, setIsFetching] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  const { showAlert, AlertRender } = useAppAlert();
+
   useEffect(() => {
     if (visible) fetchDecks();
   }, [visible]);
@@ -60,7 +62,7 @@ export default function CloudDecksModal({
       const items = await fetchCloudDecksIndex();
       setCloudDecks(items);
     } catch {
-      Alert.alert(
+      showAlert(
         "Connection Error",
         "Failed to reach the community repository.",
       );
@@ -79,10 +81,10 @@ export default function CloudDecksModal({
       const message =
         result.deckName === cloudDeck.name
           ? `${cloudDeck.name} has been added.`
-          : `Downloaded as "${result.deckName}" (original name already existed).`;
-      Alert.alert("Downloaded!", message);
+          : `Downloaded as "${result.deckName}".`;
+      showAlert("Downloaded!", message);
     } else {
-      Alert.alert("Download Failed", "Something went wrong. Please try again.");
+      showAlert("Download Failed", "Something went wrong. Please try again.");
     }
   };
 
@@ -238,6 +240,7 @@ export default function CloudDecksModal({
             )}
           </ScrollView>
         )}
+        {AlertRender}
       </SafeAreaView>
     </Modal>
   );
