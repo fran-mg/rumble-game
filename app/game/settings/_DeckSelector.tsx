@@ -1,4 +1,3 @@
-// app/game/settings/_DeckSelector.tsx
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import {
@@ -28,8 +27,29 @@ export default function DeckSelector({
   toggleDeckSelection,
   accent,
 }: DeckSelectorProps) {
-  const allSelected =
-    decks.length > 0 && decks.every((d) => selectedDeckIds.includes(d.id));
+  const totalDecks = decks.length;
+  const selectedCount = selectedDeckIds.length;
+
+  const allSelected = totalDecks > 0 && selectedCount === totalDecks;
+  const noneSelected = totalDecks > 0 && selectedCount === 0;
+  const someSelected = totalDecks > 0 && !allSelected && !noneSelected;
+
+  // Mass toggle logic: if all are selected -> select none. Otherwise -> select all.
+  const handleBulkToggle = () => {
+    if (totalDecks === 0) return;
+
+    if (allSelected) {
+      // Unselect all
+      selectedDeckIds.forEach((id) => toggleDeckSelection(id));
+    } else {
+      // Select all missing
+      decks.forEach((deck) => {
+        if (!selectedDeckIds.includes(deck.id)) {
+          toggleDeckSelection(deck.id);
+        }
+      });
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -48,27 +68,63 @@ export default function DeckSelector({
           </View>
           <View style={styles.headerSubRow}>
             <Text style={[styles.headerCount, { color: accent.colorMuted }]}>
-              {selectedDeckIds.length}
+              {selectedCount}
             </Text>
             <Text style={styles.headerCountLabel}>
-              {selectedDeckIds.length === 1 ? "deck" : "decks"} active
+              {selectedCount === 1 ? "deck" : "decks"} active
             </Text>
-            {allSelected && (
-              <View
+
+            {/* Interactive Status Badge / Button */}
+            {totalDecks > 0 && (
+              <TouchableOpacity
+                activeOpacity={0.65}
+                onPress={handleBulkToggle}
+                hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
                 style={[
-                  styles.allBadge,
-                  {
-                    borderColor: accent.colorBorder,
-                    backgroundColor: accent.colorBg,
-                  },
+                  styles.statusBadge,
+                  allSelected
+                    ? {
+                        borderColor: accent.colorBorder,
+                        backgroundColor: accent.colorBg,
+                      }
+                    : someSelected
+                      ? {
+                          borderColor: "rgba(255,255,255,0.25)",
+                          backgroundColor: "rgba(255,255,255,0.08)",
+                        }
+                      : {
+                          borderColor: "rgba(255,255,255,0.15)",
+                          backgroundColor: "rgba(255,255,255,0.03)",
+                        },
                 ]}
               >
+                {allSelected && (
+                  <LucideIcons.CheckCheck
+                    size={13}
+                    color={accent.colorMuted}
+                    strokeWidth={3}
+                  />
+                )}
+                {someSelected && (
+                  <LucideIcons.Check
+                    size={12}
+                    color="#e2e8f0"
+                    strokeWidth={3}
+                  />
+                )}
                 <Text
-                  style={[styles.allBadgeText, { color: accent.colorMuted }]}
+                  style={[
+                    styles.statusBadgeText,
+                    allSelected
+                      ? { color: accent.colorMuted }
+                      : someSelected
+                        ? { color: "#e2e8f0" }
+                        : { color: "#94a3b8" },
+                  ]}
                 >
-                  All
+                  {allSelected ? "All" : someSelected ? "Some" : "None"}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -118,7 +174,6 @@ export default function DeckSelector({
                 const isSelected = selectedDeckIds.includes(deck.id);
                 const DeckIcon =
                   (LucideIcons as any)[deck.icon] || LucideIcons.Layers;
-                const deckColor = deck.color || "#3B82F6";
 
                 return (
                   <TouchableOpacity
@@ -263,16 +318,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  allBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 20,
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     borderWidth: 1,
+    marginLeft: 4,
   },
-  allBadgeText: {
-    fontSize: 10,
+  statusBadgeText: {
+    fontSize: 11,
     fontWeight: "800",
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   chevronWrap: {
     width: 34,

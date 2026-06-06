@@ -15,7 +15,7 @@ import {
   downloadAndImportDeck,
   fetchCloudDecksIndex,
 } from "../../utils/cloudDecks";
-import { useAppAlert } from "../AppAlert";
+import { useAppAlert } from "../_AppAlert";
 
 interface CloudDecksModalProps {
   visible: boolean;
