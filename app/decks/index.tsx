@@ -6,6 +6,7 @@ import { useDeckStore } from "../../stores/useDeckStore";
 import { generateDeckViaAI } from "../../utils/aiGenerator";
 import { seedStarterDecksIfEmpty } from "../../utils/deckImporter";
 import { Deck } from "../../stores/useDeckStore";
+import { syncCommunityDecksMeta } from "../../utils/cloudDecks";
 
 import AIForgeCard from "./_AIForgeCard";
 import CategoryFilter from "./_CategoryFilter";
@@ -31,6 +32,13 @@ export default function DecksScreen() {
   const initDeckFlow = async () => {
     await seedStarterDecksIfEmpty();
     await loadDecks();
+
+    // Sync previously downloaded community decks that got stuck with the generic icon
+    const currentDecks = useDeckStore.getState().decks;
+    const didUpdate = await syncCommunityDecksMeta(currentDecks);
+    if (didUpdate) {
+      await loadDecks(); // reload decks from DB if updates applied
+    }
   };
 
   const handleAIGenerate = async () => {

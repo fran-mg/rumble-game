@@ -1,7 +1,6 @@
 import * as LucideIcons from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,

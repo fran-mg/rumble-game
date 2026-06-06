@@ -4,6 +4,32 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { Deck } from "../../stores/useDeckStore";
 import { styles } from "./Decks.styles";
 
+// Known icon name remaps — handles renamed or swapped Lucide icons
+const ICON_REMAPS: Record<string, string> = {
+  DownloadCloud: "CloudDownload",
+  UploadCloud: "CloudUpload",
+};
+
+const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
+  if (!iconName) return Fallback;
+
+  // Apply known remaps first
+  const remapped = ICON_REMAPS[iconName] ?? iconName;
+
+  // Try direct lookup (handles PascalCase like "Layers", "CloudDownload")
+  if ((LucideIcons as any)[remapped]) {
+    return (LucideIcons as any)[remapped];
+  }
+
+  // Convert kebab-case to PascalCase (e.g., "download-cloud" → "DownloadCloud")
+  const pascal = remapped
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+
+  return (LucideIcons as any)[pascal] || Fallback;
+};
+
 interface Props {
   deck: Deck;
   onEdit: (deck: Deck) => void;
@@ -11,8 +37,8 @@ interface Props {
 }
 
 export default function DeckCard({ deck, onEdit, onDelete }: Props) {
-  const DeckIcon = (LucideIcons as any)[deck.icon] ?? LucideIcons.Cloud;
-  const deckColor = deck.color ?? "#3B82F6";
+  const DeckIcon = getLucideIcon(deck.icon, LucideIcons.Layers);
+  const deckColor = deck.color || "#6366f1";
 
   return (
     <View style={styles.deckCard}>

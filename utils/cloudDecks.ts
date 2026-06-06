@@ -48,6 +48,44 @@ export const fetchCloudDecksIndex = async (): Promise<CloudDeckIndexItem[]> => {
   }
 };
 
+// Syncs already downloaded decks that got stuck with the default CloudDownload icon
+export const syncCommunityDecksMeta = async (
+  installedDecks: any[],
+): Promise<boolean> => {
+  if (!db) return false;
+  try {
+    const hasPotentialOutdatedDecks = installedDecks.some(
+      (d) => d.icon === "CloudDownload" || d.icon === "DownloadCloud",
+    );
+    if (!hasPotentialOutdatedDecks) return false;
+
+    const items = await fetchCloudDecksIndex();
+    let updated = false;
+
+    for (const cloudDeck of items) {
+      const matchingDecks = installedDecks.filter(
+        (d) =>
+          (d.name === cloudDeck.name ||
+            d.name.startsWith(`${cloudDeck.name}_v`)) &&
+          (d.icon === "CloudDownload" || d.icon === "DownloadCloud"),
+      );
+
+      for (const deck of matchingDecks) {
+        await dbHelpers.updateDeck(Number(deck.id), {
+          icon: cloudDeck.icon,
+          color: cloudDeck.color,
+        });
+        updated = true;
+      }
+    }
+
+    return updated;
+  } catch (err) {
+    console.error("Failed to sync community decks meta:", err);
+    return false;
+  }
+};
+
 // Helper to generate versioned deck name if name already exists
 const getVersionedDeckName = (
   baseName: string,
@@ -62,7 +100,7 @@ const getVersionedDeckName = (
 
   // Escape special regex characters in baseName
   const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const versionRegex = new RegExp(`^${escapedBase}v(\\d+)$`);
+  const versionRegex = new RegExp(`^${escapedBase}_v(\\d+)$`);
 
   // Find all existing versions
   const versions = existingNames
@@ -73,13 +111,13 @@ const getVersionedDeckName = (
     .filter((v) => v > 0);
 
   // If no v2 exists, use it
-  if (!existingNames.includes(`${baseName}v2`)) {
-    return `${baseName}v2`;
+  if (!existingNames.includes(`${baseName}_v2`)) {
+    return `${baseName}_v2`;
   }
 
   // Find highest version and increment
   const maxVersion = Math.max(...versions);
-  return `${baseName}v${maxVersion + 1}`;
+  return `${baseName}_v${maxVersion + 1}`;
 };
 
 export const downloadAndImportDeck = async (
@@ -95,19 +133,17 @@ export const downloadAndImportDeck = async (
     // Generate versioned name if deck already exists
     const finalDeckName = getVersionedDeckName(deckData.name, installedDecks);
 
-    let createdDeckId: number | null = null;
-
     await db.withTransactionAsync(async () => {
       const deckId = await dbHelpers.createDeck(
-        finalDeckName, // Use versioned name
-        deckData.category,
+        finalDeckName,
+        deckItem.category || deckData.category,
         "community",
-        deckData.icon || "DownloadCloud",
-        deckData.color || "#6366f1",
-        deckData.description || "",
+        // Prefer the icon and color from the index item over the raw deck file
+        deckItem.icon || deckData.icon || "CloudDownload",
+        deckItem.color || deckData.color || "#6366f1",
+        deckItem.description || deckData.description || "",
+        deckItem.url || "",
       );
-
-      createdDeckId = deckId;
 
       if (deckId && deckData.cards) {
         for (const card of deckData.cards) {

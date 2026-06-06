@@ -27,12 +27,17 @@ interface CloudDecksModalProps {
 // Helper to reliably map icon names
 const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
   if (!iconName) return Fallback;
-  const pascal = iconName.replace(/(^\w|-\w)/g, (clear) =>
-    clear.replace(/-/, "").toUpperCase(),
-  );
-  return (
-    (LucideIcons as any)[iconName] || (LucideIcons as any)[pascal] || Fallback
-  );
+  // Try direct lookup first
+  if ((LucideIcons as any)[iconName]) {
+    return (LucideIcons as any)[iconName];
+  }
+  // Convert kebab-case to PascalCase
+  const pascal = iconName
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+
+  return (LucideIcons as any)[pascal] || Fallback;
 };
 
 export default function CloudDecksModal({
