@@ -1,3 +1,4 @@
+import { useAutoUpdates } from "../hooks/useAutoUpdates";
 import {
   DarkTheme,
   DefaultTheme,
@@ -18,6 +19,8 @@ import "./global.css";
 configureReanimatedLogger({ level: ReanimatedLogLevel.error, strict: false });
 
 export default function RootLayout() {
+  useAutoUpdates();
+
   const colorScheme = useColorScheme();
   colorScheme === "dark"; // Hard coding dark theme - affects phone bottom strip.
 
