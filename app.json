@@ -1,30 +1,51 @@
 {
   "expo": {
-    "name": "articulate-game",
-    "slug": "articulate-game",
+    "name": "Rumble",
+    "slug": "rumble-game",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "articulategame",
+    "scheme": "rumble",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android"],
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "updates": {
+      "url": "https://u.expo.dev/4c0d85f3-ad84-4304-9f39-8bc53b61f53f"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.franmg.rumble",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.franmg.rumble",
+      "versionCode": 1
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "4c0d85f3-ad84-4304-9f39-8bc53b61f53f"
       }
     },
-    "plugins": ["expo-router", "expo-sqlite", "expo-font"],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "owner": "fran-mg"
   }
 }
