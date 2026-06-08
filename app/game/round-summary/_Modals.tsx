@@ -270,7 +270,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 10,
     paddingBottom: 36,
     gap: 0,
   },
@@ -287,6 +288,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 16,
+    paddingVertical: 0,
+    paddingHorizontal: 10,
   },
   sheetEyebrow: {
     color: "#334155",
