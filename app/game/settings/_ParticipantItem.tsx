@@ -42,7 +42,7 @@ export default function ParticipantItem({
   const isTeam = item.type === "team";
 
   return (
-    <ScaleDecorator activeScale={1.02}>
+    <ScaleDecorator activeScale={0.95}>
       <View
         style={[
           styles.row,
@@ -66,7 +66,7 @@ export default function ParticipantItem({
         {/* Drag handle */}
         <TouchableOpacity
           onPressIn={drag}
-          hitSlop={{ top: 12, bottom: 12, left: 4, right: 8 }}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 40 }}
           style={styles.dragHandle}
           disabled={isEditing}
         >
@@ -122,7 +122,7 @@ export default function ParticipantItem({
             <>
               <TouchableOpacity
                 onPress={onConfirmEdit}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 15 }}
                 style={[styles.actionBtn, styles.confirmBtn]}
               >
                 <LucideIcons.Check
@@ -133,7 +133,7 @@ export default function ParticipantItem({
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => onCancelEdit(item.id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 20, bottom: 20, left: 15, right: 20 }}
                 style={[styles.actionBtn, styles.cancelBtn]}
               >
                 <LucideIcons.X color="#ef4444" size={15} strokeWidth={2.5} />
@@ -143,14 +143,14 @@ export default function ParticipantItem({
             <>
               <TouchableOpacity
                 onPress={() => onBeginEdit(item.id, item.name)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 15 }}
                 style={styles.actionBtn}
               >
                 <LucideIcons.Pencil color="#475569" size={15} strokeWidth={2} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => onDelete(item.id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 20, bottom: 20, left: 15, right: 20 }}
                 style={styles.actionBtn}
               >
                 <LucideIcons.Trash2 color="#475569" size={15} strokeWidth={2} />
@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 0,
-    marginBottom: 6,
+    marginHorizontal: 10,
+    marginVertical: 6,
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 10,

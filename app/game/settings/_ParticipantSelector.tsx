@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
-    paddingHorizontal: 12,
+    paddingHorizontal: 2,
     paddingVertical: 8,
   },
   footerCard: {
