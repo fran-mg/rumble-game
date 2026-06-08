@@ -1,0 +1,75 @@
+name: Deploy EAS Update
+
+# Trigger on pushes to main, ANY tag push, or manually
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*" # Triggers when you push a tag like v1.0.4
+  workflow_dispatch:
+    inputs:
+      update_message:
+        description: "Custom EAS update message"
+        required: false
+        type: string
+
+jobs:
+  update:
+    name: Publish EAS Update
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Grab code (fetch-depth: 0 is required to download git tags!)
+      - name: 🏗 Setup repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: 🏗 Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔎 Run TypeScript check
+        run: npm run typecheck
+
+      - name: 🧹 Run ESLint
+        run: npm run lint --if-present
+
+      # 2. Determine the exact message based on HOW this was triggered
+      - name: 📝 Determine Update Message
+        id: message_prep
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.update_message }}" != "" ]]; then
+            # Manual trigger via GitHub UI
+            RAW_MSG="${{ inputs.update_message }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            # Triggered by a Git Tag
+            RAW_MSG=$(git tag -l --format='%(contents:subject)' "${{ github.ref_name }}")
+            # Fallback if it's an empty tag
+            if [[ -z "$RAW_MSG" ]]; then RAW_MSG="Release ${{ github.ref_name }}"; fi
+          else
+            # Triggered by a normal push to main
+            RAW_MSG="${{ github.event.head_commit.message }}"
+          fi
+
+          # Clean it up: Grab only the first line to prevent multi-line CLI crashes
+          CLEAN_MSG=$(echo "$RAW_MSG" | head -n 1)
+
+          # Save to an environment variable for the next step
+          echo "UPDATE_MESSAGE=$CLEAN_MSG" >> $GITHUB_ENV
+
+      # 3. Publish to EAS using the dynamically chosen message
+      - name: 🚀 Publish EAS Update
+        run: eas update --branch preview --message "${{ env.UPDATE_MESSAGE }}" --non-interactive
