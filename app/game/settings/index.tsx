@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: 16,
-    paddingBottom: 160,
+    paddingBottom: 120,
   },
 
   // ── Page header ─────────────────────────────────────────────────────────────
