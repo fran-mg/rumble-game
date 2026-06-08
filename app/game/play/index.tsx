@@ -65,7 +65,9 @@ export default function PlayScreen() {
   const progress = useSharedValue(1);
   const currentEntity = participants[currentTurnIndex];
   const currentCard = cardsInRound[currentCardIndex];
-  const continuousIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const continuousIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   // 1. Orientation lock — driven by meta.orientation
   useEffect(() => {
@@ -99,7 +101,7 @@ export default function PlayScreen() {
 
   // 2. Countdown phase
   useEffect(() => {
-    let countInterval: NodeJS.Timeout;
+    let countInterval: ReturnType<typeof setInterval>;
     if (gameState === "countdown") {
       startTurn();
       setCountdown(3);
