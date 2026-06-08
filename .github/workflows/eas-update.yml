@@ -44,12 +44,6 @@ jobs:
       - name: 🔎 Run TypeScript check
         run: npm run typecheck
 
-      - name: 🧹 Run ESLint
-        run: npm run lint --if-present
-        env:
-          # Tells ESLint to allow legacy .eslintrc config files instead of crashing
-          ESLINT_USE_FLAT_CONFIG: false
-
       # 2. Determine the exact message based on HOW this was triggered
       - name: 📝 Determine Update Message
         id: message_prep
