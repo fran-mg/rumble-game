@@ -1,4 +1,3 @@
-// app/game/play/index.tsx
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";

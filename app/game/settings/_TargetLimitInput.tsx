@@ -1,4 +1,3 @@
-// app/game/settings/_TargetLimitInput.tsx
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import {

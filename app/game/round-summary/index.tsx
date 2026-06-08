@@ -1,4 +1,3 @@
-// app/game/round-summary/index.tsx
 import { useRouter } from "expo-router";
 import * as LucideIcons from "lucide-react-native";
 import React, { useState } from "react";

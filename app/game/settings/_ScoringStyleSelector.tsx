@@ -1,4 +1,3 @@
-// app/game/settings/_ScoringStyleSelector.tsx
 import * as LucideIcons from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
