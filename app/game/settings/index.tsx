@@ -24,6 +24,7 @@ import { Participant } from "../../../utils/database";
 import DeckSelector from "./_DeckSelector";
 import ParticipantSelector from "./_ParticipantSelector";
 import ScoringStyleSelector from "./_ScoringStyleSelector";
+import RoundsSelector from "./_RoundsSelector";
 import TimerSelector from "./_TimerSelector";
 import { useAppAlert } from "../../_AppAlert"; // Updated import to include underscore
 
@@ -197,9 +198,7 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <ScoringStyleSelector
-            scoringStyle={scoringStyle}
-            onScoringStyleChange={handleScoringStyleChange}
+          <RoundsSelector
             targetLimit={targetLimit}
             onTargetLimitChange={setTargetLimit}
             accent={accent}
