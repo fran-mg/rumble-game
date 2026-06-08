@@ -6,7 +6,7 @@ import HomeHeader from "./modes/_ModeHeader";
 import ModeCardList from "./modes/_ModeCardList";
 
 // true = user view, false = show dev tools
-const isProductionTest = true;
+const isProductionTest = false;
 
 export default function HomeScreen() {
   return (
