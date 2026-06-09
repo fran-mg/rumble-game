@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, UIManager, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DecksButton from "./decks/_DecksButton";
 import DevDrawer from "./(dev)/dev-drawer/index";
