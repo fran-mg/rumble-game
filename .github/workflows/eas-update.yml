@@ -1,12 +1,13 @@
 name: Deploy EAS Update
 
-# Trigger on pushes to main, ANY tag push, or manually
+# Fixed: Wrapped the entire run-name string in double quotes
+run-name: "${{ github.ref_type == 'tag' && format('Tag: {0}', github.ref_name) || github.event.head_commit.message }}"
+
+# Trigger on pushes to main or manually
 on:
   push:
     branches:
       - main
-    tags:
-      - "*" # Triggers when you push a tag like v1.0.4
   workflow_dispatch:
     inputs:
       update_message:
