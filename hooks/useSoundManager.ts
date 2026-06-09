@@ -14,23 +14,38 @@ const SOUNDS = {
 
 export type SoundKey = keyof typeof SOUNDS;
 
-// ── Hot pool: pre-instantiated players ready to fire with zero delay ───────────
-// Only correct and pass need this — they're the only rapid-fire sounds.
-const HOT_POOL_SIZE = 4;
-const hotPool: Record<"correct" | "pass", AudioPlayer[]> = {
-  correct: [],
-  pass: [],
+// ── Pool sizes: rapid-fire sounds get bigger pools ────────────────────────────
+const POOL_SIZES: Record<SoundKey, number> = {
+  correct: 4, // Rapid-fire during gameplay
+  pass: 4, // Rapid-fire during gameplay
+  click: 3, // Can be clicked rapidly in UI
+  bin: 2, // Moderate usage
+  download: 2, // Moderate usage
+  countdown: 1, // Only once per turn
+  time_up: 1, // Only once per turn
+  score_reveal: 1, // Only once per match
 };
 
+// ── Universal pool for ALL sounds ──────────────────────────────────────────────
+type PlayerPool = {
+  players: AudioPlayer[];
+  index: number; // Round-robin pointer
+};
+
+const pools: Partial<Record<SoundKey, PlayerPool>> = {};
 let ready = false;
 
-function createHotPlayer(key: "correct" | "pass"): AudioPlayer {
+function createPlayer(key: SoundKey): AudioPlayer {
   return createAudioPlayer(SOUNDS[key]);
 }
 
-function replenishPool(key: "correct" | "pass") {
-  while (hotPool[key].length < HOT_POOL_SIZE) {
-    hotPool[key].push(createHotPlayer(key));
+function replenishPool(key: SoundKey) {
+  const size = POOL_SIZES[key];
+  const pool = pools[key];
+  if (!pool) return;
+
+  while (pool.players.length < size) {
+    pool.players.push(createPlayer(key));
   }
 }
 
@@ -42,53 +57,54 @@ export async function preloadSounds() {
     shouldPlayInBackground: false,
   });
 
-  // Fill hot pools — these players sit idle until needed
-  replenishPool("correct");
-  replenishPool("pass");
+  // Create pools for ALL sounds upfront
+  const keys = Object.keys(SOUNDS) as SoundKey[];
+  for (const key of keys) {
+    const size = POOL_SIZES[key];
+    const players: AudioPlayer[] = [];
+
+    for (let i = 0; i < size; i++) {
+      players.push(createPlayer(key));
+    }
+
+    pools[key] = { players, index: 0 };
+  }
 
   ready = true;
 }
 
-// ── Play ───────────────────────────────────────────────────────────────────────
+// ── Play (now instant for ALL sounds) ──────────────────────────────────────────
 export function playSound(key: SoundKey) {
-  if (!ready) preloadSounds();
+  if (!ready) {
+    preloadSounds(); // Safety fallback
+    return;
+  }
 
-  if (key === "correct" || key === "pass") {
-    // Grab the next pre-warmed player from the front of the pool
-    const player = hotPool[key].shift();
+  const pool = pools[key];
+  if (!pool || pool.players.length === 0) return;
 
-    if (player) {
-      // Fire instantly — player is already instantiated, position is at 0
-      player.play();
+  // Grab next player via round-robin
+  const player = pool.players[pool.index];
+  pool.index = (pool.index + 1) % pool.players.length;
 
-      // Dispose after playback, then top the pool back up with a fresh player
-      setTimeout(() => {
-        try {
-          player.remove();
-        } catch {}
-        hotPool[key].push(createHotPlayer(key));
-      }, 1500);
-    } else {
-      // Fallback: pool was somehow exhausted — fire a fresh one anyway
-      const fallback = createAudioPlayer(SOUNDS[key]);
-      fallback.play();
-      setTimeout(() => {
-        try {
-          fallback.remove();
-        } catch {}
-      }, 1500);
-    }
-  } else {
-    // All other sounds: create-and-fire is fine (not rapid-fire)
-    try {
-      const player = createAudioPlayer(SOUNDS[key]);
-      player.play();
-      setTimeout(() => {
-        try {
-          player.remove();
-        } catch {}
-      }, 5000);
-    } catch {}
+  try {
+    player.seekTo(0); // Rewind to start (instant on pre-created players)
+    player.play();
+  } catch (e) {
+    console.warn(`[Sound] playSound("${key}") failed:`, e);
+  }
+
+  // For single-use sounds (countdown, time_up, score_reveal), replace the player
+  // after use so it's fresh next time. For rapid sounds, just rewind is fine.
+  if (POOL_SIZES[key] === 1) {
+    setTimeout(() => {
+      try {
+        player.remove();
+      } catch {}
+      pool.players[
+        pool.index === 0 ? pool.players.length - 1 : pool.index - 1
+      ] = createPlayer(key);
+    }, 5000);
   }
 }
 
@@ -101,12 +117,16 @@ export function useSoundManager() {
 }
 
 export function unloadSounds() {
-  Object.values(hotPool)
-    .flat()
-    .forEach((p) => {
+  const keys = Object.keys(pools) as SoundKey[];
+  for (const key of keys) {
+    const pool = pools[key];
+    if (!pool) continue;
+    pool.players.forEach((p) => {
       try {
         p.remove();
       } catch {}
     });
+    delete pools[key];
+  }
   ready = false;
 }
