@@ -58,11 +58,11 @@ export default function EditDeckModal({
 
   const handleAddCard = async () => {
     playSound("download");
-    if (!newWord.trim() || !deck || !db) return;
+    if (!newWord.trim().toUpperCase() || !deck || !db) return;
     try {
       await db.runAsync(
-        "INSERT INTO cards (deck_id, word, taboo_words, difficulty) VALUES (?, ?, ?, ?);",
-        [deck.id, newWord.trim(), JSON.stringify(["custom", "hint"]), "medium"],
+        "INSERT INTO cards (deck_id, word, taboo_words, chardes_hint, password_hint) VALUES (?, ?, ?, ?, ?);",
+        [deck.id, newWord.trim().toUpperCase(), JSON.stringify([]), "", ""],
       );
       await db.runAsync(
         "UPDATE decks SET card_count = card_count + 1 WHERE id = ?;",
