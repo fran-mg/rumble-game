@@ -18,6 +18,7 @@ import {
 } from "../../../hooks/useTiltControl";
 import { useGameStore } from "../../../stores/useGameStore";
 import { getModeTheme } from "../../../utils/_modeTheme";
+import { playSound } from "../../../hooks/useSoundManager";
 import CountdownScreen from "./_CountdownScreen";
 import PlayingCard from "./_PlayingCard";
 import ProgressBar from "./_ProgressBar";
@@ -109,6 +110,9 @@ export default function PlayScreen() {
       progress.value = 1;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      // ── SOUND: play the full 3-2-1-GO file once ──────────────────────────
+      playSound("countdown");
+
       countInterval = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -159,6 +163,7 @@ export default function PlayScreen() {
   const triggerTimeUp = () => {
     setGameState("timeup");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    playSound("time_up");
     setTimeout(() => {
       endTurn();
       ScreenOrientation.lockAsync(
@@ -182,6 +187,10 @@ export default function PlayScreen() {
       return;
 
     setFlashState(action === "guessed" ? "done" : "pass");
+
+    // ── SOUND: correct or pass ─────────────────────────────────────────────
+    playSound(action === "guessed" ? "correct" : "pass");
+
     Haptics.impactAsync(
       action === "guessed"
         ? Haptics.ImpactFeedbackStyle.Heavy

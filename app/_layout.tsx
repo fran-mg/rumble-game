@@ -14,6 +14,8 @@ import {
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 import { initDatabase } from "../utils/database";
+import { preloadSounds, unloadSounds } from "../hooks/useSoundManager";
+// @ts-ignore: allow side-effect CSS import without module declarations
 import "./global.css";
 
 configureReanimatedLogger({ level: ReanimatedLogLevel.error, strict: false });
@@ -21,8 +23,16 @@ configureReanimatedLogger({ level: ReanimatedLogLevel.error, strict: false });
 export default function RootLayout() {
   useAutoUpdates();
 
+  useEffect(() => {
+    // Preload once when app starts, keep loaded for entire session
+    preloadSounds();
+    return () => {
+      // Only unload when app completely closes
+      unloadSounds();
+    };
+  }, []);
+
   const colorScheme = useColorScheme();
-  colorScheme === "dark"; // Hard coding dark theme - affects phone bottom strip.
 
   useEffect(() => {
     initDatabase().catch(console.error);

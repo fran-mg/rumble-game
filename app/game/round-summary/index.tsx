@@ -5,6 +5,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGameStore } from "../../../stores/useGameStore";
 import { getModeAccent } from "../../../utils/_modeTheme";
+import { playSound } from "../../../hooks/useSoundManager";
 import HistoryList from "./_HistoryList";
 import Modals from "./_Modals";
 import ScoreHeader from "./_ScoreHeader";
@@ -50,6 +51,7 @@ export default function RoundSummaryScreen() {
   const nextEntity = participants[(currentTurnIndex + 1) % participants.length];
 
   const handleNext = () => {
+    playSound("click");
     if (isMatchOver) {
       router.replace("/game/match-summary" as any);
     } else {

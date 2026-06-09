@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { playSound } from "../../hooks/useSoundManager";
 import { getModeTheme } from "../../utils/_modeTheme";
 
 interface ModeCardProps {
@@ -11,10 +12,15 @@ export default function ModeCard({ modeKey, onPress }: ModeCardProps) {
   const { accent, meta } = getModeTheme(modeKey);
   const Icon = meta.Icon;
 
+  const handlePress = () => {
+    playSound("click");
+    onPress();
+  };
+
   return (
     <TouchableOpacity
       activeOpacity={0.75}
-      onPress={onPress}
+      onPress={handlePress}
       style={[styles.card, { borderLeftColor: accent.color }]}
     >
       <View style={[styles.cardGlow, { backgroundColor: accent.colorBg }]} />

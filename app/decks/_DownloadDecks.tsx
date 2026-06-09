@@ -15,6 +15,7 @@ import {
   downloadAndImportDeck,
   fetchCloudDecksIndex,
 } from "../../utils/cloudDecks";
+import { playSound } from "../../hooks/useSoundManager";
 import { useAppAlert } from "../_AppAlert";
 
 interface CloudDecksModalProps {
@@ -77,6 +78,8 @@ export default function CloudDecksModal({
     setDownloadingId(null);
 
     if (result.success) {
+      playSound("download");
+
       await onDecksUpdated();
       const message =
         result.deckName === cloudDeck.name

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import db from "../../utils/database";
+import { playSound } from "../../hooks/useSoundManager";
 
 // Helper to reliably map icon names
 const getLucideIcon = (iconName: string | undefined, Fallback: any) => {
@@ -56,6 +57,7 @@ export default function EditDeckModal({
   };
 
   const handleAddCard = async () => {
+    playSound("download");
     if (!newWord.trim() || !deck || !db) return;
     try {
       await db.runAsync(
@@ -75,6 +77,7 @@ export default function EditDeckModal({
   };
 
   const handleDeleteCard = async (cardId: number) => {
+    playSound("bin");
     if (!db || !deck) return;
     try {
       await db.runAsync("DELETE FROM cards WHERE id = ?;", [cardId]);
