@@ -25,7 +25,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Preload once when app starts, keep loaded for entire session
-    preloadSounds();
+    preloadSounds().catch((err) => {
+      console.error("[App] preloadSounds failed:", err);
+      // App continues without sounds rather than crashing
+    });
     return () => {
       // Only unload when app completely closes
       unloadSounds();

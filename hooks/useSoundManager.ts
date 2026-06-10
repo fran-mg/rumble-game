@@ -52,25 +52,28 @@ function replenishPool(key: SoundKey) {
 export async function preloadSounds() {
   if (ready) return;
 
-  await setAudioModeAsync({
-    playsInSilentMode: true,
-    shouldPlayInBackground: false,
-  });
+  try {
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+    });
 
-  // Create pools for ALL sounds upfront
-  const keys = Object.keys(SOUNDS) as SoundKey[];
-  for (const key of keys) {
-    const size = POOL_SIZES[key];
-    const players: AudioPlayer[] = [];
+    // Create pools for ALL sounds upfront
+    const keys = Object.keys(SOUNDS) as SoundKey[];
+    keys.forEach((key) => {
+      try {
+        replenishPool(key);
+      } catch (err) {
+        console.warn(`[Sound] Failed to preload "${key}":`, err);
+        // Continue loading other sounds even if one fails
+      }
+    });
 
-    for (let i = 0; i < size; i++) {
-      players.push(createPlayer(key));
-    }
-
-    pools[key] = { players, index: 0 };
+    ready = true;
+  } catch (err) {
+    console.error("[Sound] preloadSounds failed:", err);
+    // Don't set ready = true, but don't crash either
   }
-
-  ready = true;
 }
 
 // ── Play (now instant for ALL sounds) ──────────────────────────────────────────
