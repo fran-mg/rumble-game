@@ -14,104 +14,82 @@ const SOUNDS = {
 
 export type SoundKey = keyof typeof SOUNDS;
 
-// ── Pool sizes: rapid-fire sounds get bigger pools ────────────────────────────
+// Safe pool limit that guarantees instant overlap without crashing Android's AudioFlinger
 const POOL_SIZES: Record<SoundKey, number> = {
-  correct: 4, // Rapid-fire during gameplay
-  pass: 4, // Rapid-fire during gameplay
-  click: 3, // Can be clicked rapidly in UI
-  bin: 2, // Moderate usage
-  download: 2, // Moderate usage
-  countdown: 1, // Only once per turn
-  time_up: 1, // Only once per turn
-  score_reveal: 1, // Only once per match
+  correct: 2,
+  pass: 2,
+  click: 2,
+  bin: 1,
+  download: 1,
+  countdown: 1,
+  time_up: 1,
+  score_reveal: 1,
 };
 
-// ── Universal pool for ALL sounds ──────────────────────────────────────────────
 type PlayerPool = {
   players: AudioPlayer[];
-  index: number; // Round-robin pointer
+  index: number;
 };
 
 const pools: Partial<Record<SoundKey, PlayerPool>> = {};
-let ready = false;
+let isInitialized = false;
 
-function createPlayer(key: SoundKey): AudioPlayer {
-  return createAudioPlayer(SOUNDS[key]);
-}
-
-function replenishPool(key: SoundKey) {
-  const size = POOL_SIZES[key];
-  const pool = pools[key];
-  if (!pool) return;
-
-  while (pool.players.length < size) {
-    pool.players.push(createPlayer(key));
-  }
+// Dev-mode cleanup: Prevents the Fast Refresh NullPointerException
+if (__DEV__) {
+  unloadSounds();
 }
 
 export async function preloadSounds() {
-  if (ready) return;
+  if (isInitialized) return;
 
   try {
+    // Note: If you still get the permission warning in logcat, it's harmless,
+    // but playsInSilentMode: true is what triggers it.
     await setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: false,
     });
 
-    // Create pools for ALL sounds upfront
     const keys = Object.keys(SOUNDS) as SoundKey[];
-    keys.forEach((key) => {
-      try {
-        replenishPool(key);
-      } catch (err) {
-        console.warn(`[Sound] Failed to preload "${key}":`, err);
-        // Continue loading other sounds even if one fails
-      }
-    });
 
-    ready = true;
+    for (const key of keys) {
+      pools[key] = { players: [], index: 0 };
+      const size = POOL_SIZES[key];
+
+      for (let i = 0; i < size; i++) {
+        // THE FIX: We pass the module require() ID directly.
+        // Expo Audio resolves this safely inside the native C++ / Kotlin layer!
+        pools[key]!.players.push(createAudioPlayer(SOUNDS[key]));
+      }
+    }
+
+    isInitialized = true;
   } catch (err) {
-    console.error("[Sound] preloadSounds failed:", err);
-    // Don't set ready = true, but don't crash either
+    console.error("[Sound] Preloading pipeline aborted:", err);
   }
 }
 
-// ── Play (now instant for ALL sounds) ──────────────────────────────────────────
 export function playSound(key: SoundKey) {
-  if (!ready) {
-    preloadSounds(); // Safety fallback
+  if (!isInitialized) {
+    console.warn(`[Sound] "${key}" not ready yet.`);
+    preloadSounds();
     return;
   }
 
   const pool = pools[key];
   if (!pool || pool.players.length === 0) return;
 
-  // Grab next player via round-robin
   const player = pool.players[pool.index];
   pool.index = (pool.index + 1) % pool.players.length;
 
   try {
-    player.seekTo(0); // Rewind to start (instant on pre-created players)
+    player.seekTo(0);
     player.play();
   } catch (e) {
     console.warn(`[Sound] playSound("${key}") failed:`, e);
   }
-
-  // For single-use sounds (countdown, time_up, score_reveal), replace the player
-  // after use so it's fresh next time. For rapid sounds, just rewind is fine.
-  if (POOL_SIZES[key] === 1) {
-    setTimeout(() => {
-      try {
-        player.remove();
-      } catch {}
-      pool.players[
-        pool.index === 0 ? pool.players.length - 1 : pool.index - 1
-      ] = createPlayer(key);
-    }, 5000);
-  }
 }
 
-// ── Hook ───────────────────────────────────────────────────────────────────────
 export function useSoundManager() {
   useEffect(() => {
     preloadSounds();
@@ -124,12 +102,13 @@ export function unloadSounds() {
   for (const key of keys) {
     const pool = pools[key];
     if (!pool) continue;
-    pool.players.forEach((p) => {
+
+    pool.players.forEach((player) => {
       try {
-        p.remove();
+        player.remove();
       } catch {}
     });
     delete pools[key];
   }
-  ready = false;
+  isInitialized = false;
 }
