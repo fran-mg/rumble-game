@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from "expo-audio";
+import { Asset } from "expo-asset";
 
 const SOUNDS = {
   correct: require("../assets/audio/correct.m4a"),
@@ -14,7 +15,6 @@ const SOUNDS = {
 
 export type SoundKey = keyof typeof SOUNDS;
 
-// Safe pool limit that guarantees instant overlap without crashing Android's AudioFlinger
 const POOL_SIZES: Record<SoundKey, number> = {
   correct: 2,
   pass: 2,
@@ -33,40 +33,57 @@ type PlayerPool = {
 
 const pools: Partial<Record<SoundKey, PlayerPool>> = {};
 let isInitialized = false;
+let isPreloading = false;
 
-// Dev-mode cleanup: Prevents the Fast Refresh NullPointerException
 if (__DEV__) {
   unloadSounds();
 }
 
 export async function preloadSounds() {
-  if (isInitialized) return;
+  if (isInitialized || isPreloading) return;
+  isPreloading = true;
 
+  // 1. ISOLATED: If Android blocks this permission, we catch it and move on.
   try {
-    // Note: If you still get the permission warning in logcat, it's harmless,
-    // but playsInSilentMode: true is what triggers it.
     await setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: false,
     });
-
-    const keys = Object.keys(SOUNDS) as SoundKey[];
-
-    for (const key of keys) {
-      pools[key] = { players: [], index: 0 };
-      const size = POOL_SIZES[key];
-
-      for (let i = 0; i < size; i++) {
-        // THE FIX: We pass the module require() ID directly.
-        // Expo Audio resolves this safely inside the native C++ / Kotlin layer!
-        pools[key]!.players.push(createAudioPlayer(SOUNDS[key]));
-      }
-    }
-
-    isInitialized = true;
-  } catch (err) {
-    console.error("[Sound] Preloading pipeline aborted:", err);
+  } catch (e) {
+    console.log("[Sound] setAudioModeAsync skipped (normal on Android):", e);
   }
+
+  const keys = Object.keys(SOUNDS) as SoundKey[];
+
+  // 2. ISOLATED: Wrap each sound so one failure doesn't silence the whole game
+  for (const key of keys) {
+    try {
+      const asset = Asset.fromModule(SOUNDS[key]);
+
+      if (!asset.localUri) {
+        await asset.downloadAsync();
+      }
+
+      const uri = asset.localUri || asset.uri;
+      if (!uri) continue;
+
+      if (!pools[key]) {
+        pools[key] = { players: [], index: 0 };
+      }
+
+      const size = POOL_SIZES[key];
+      for (let i = 0; i < size; i++) {
+        // Raw string passed safely
+        pools[key]!.players.push(createAudioPlayer(uri));
+      }
+    } catch (err) {
+      console.warn(`[Sound] Failed to load ${key}:`, err);
+    }
+  }
+
+  // 3. Mark as initialized even if some skipped, so the app doesn't infinite loop
+  isInitialized = true;
+  isPreloading = false;
 }
 
 export function playSound(key: SoundKey) {
