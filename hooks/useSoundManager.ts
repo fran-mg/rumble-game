@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from "expo-audio";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import { Asset } from "expo-asset";
 
 const SOUNDS = {
@@ -15,93 +15,53 @@ const SOUNDS = {
 
 export type SoundKey = keyof typeof SOUNDS;
 
-const POOL_SIZES: Record<SoundKey, number> = {
-  correct: 2,
-  pass: 2,
-  click: 2,
-  bin: 1,
-  download: 1,
-  countdown: 1,
-  time_up: 1,
-  score_reveal: 1,
-};
-
-type PlayerPool = {
-  players: AudioPlayer[];
-  index: number;
-};
-
-const pools: Partial<Record<SoundKey, PlayerPool>> = {};
 let isInitialized = false;
-let isPreloading = false;
-
-if (__DEV__) {
-  unloadSounds();
-}
 
 export async function preloadSounds() {
-  if (isInitialized || isPreloading) return;
-  isPreloading = true;
+  if (isInitialized) return;
 
-  // 1. ISOLATED: If Android blocks this permission, we catch it and move on.
+  // 1. Safe Audio Mode setting (isolated so it doesn't crash the pipeline)
   try {
     await setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: false,
     });
   } catch (e) {
-    console.log("[Sound] setAudioModeAsync skipped (normal on Android):", e);
+    console.log("[Sound] setAudioMode skipped (normal on Android):", e);
   }
 
-  const keys = Object.keys(SOUNDS) as SoundKey[];
-
-  // 2. ISOLATED: Wrap each sound so one failure doesn't silence the whole game
-  for (const key of keys) {
-    try {
-      const asset = Asset.fromModule(SOUNDS[key]);
-
-      if (!asset.localUri) {
-        await asset.downloadAsync();
-      }
-
-      const uri = asset.localUri || asset.uri;
-      if (!uri) continue;
-
-      if (!pools[key]) {
-        pools[key] = { players: [], index: 0 };
-      }
-
-      const size = POOL_SIZES[key];
-      for (let i = 0; i < size; i++) {
-        // Raw string passed safely
-        pools[key]!.players.push(createAudioPlayer(uri));
-      }
-    } catch (err) {
-      console.warn(`[Sound] Failed to load ${key}:`, err);
-    }
+  // 2. The Magic Bullet for APKs and OTA Updates
+  // This explicitly tells the Expo bundler to download and cache every audio
+  // file into the device memory, regardless of whether it's an APK or an update.
+  try {
+    const modules = Object.values(SOUNDS);
+    await Asset.loadAsync(modules);
+    isInitialized = true;
+  } catch (err) {
+    console.warn("[Sound] Failed to cache assets:", err);
   }
-
-  // 3. Mark as initialized even if some skipped, so the app doesn't infinite loop
-  isInitialized = true;
-  isPreloading = false;
 }
 
 export function playSound(key: SoundKey) {
   if (!isInitialized) {
-    console.warn(`[Sound] "${key}" not ready yet.`);
     preloadSounds();
-    return;
   }
 
-  const pool = pools[key];
-  if (!pool || pool.players.length === 0) return;
-
-  const player = pool.players[pool.index];
-  pool.index = (pool.index + 1) % pool.players.length;
-
   try {
-    player.seekTo(0);
+    // 3. On-Demand Playback
+    // Because Asset.loadAsync already cached the files, this executes with
+    // zero latency. We pass the module ID directly, bypassing all string bugs.
+    const player = createAudioPlayer(SOUNDS[key]);
     player.play();
+
+    // 4. Safe Cleanup
+    // Automatically destroys the native player 4 seconds later to prevent memory
+    // leaks, without relying on unstable native event listeners.
+    setTimeout(() => {
+      try {
+        player.remove();
+      } catch {}
+    }, 4000);
   } catch (e) {
     console.warn(`[Sound] playSound("${key}") failed:`, e);
   }
@@ -115,17 +75,5 @@ export function useSoundManager() {
 }
 
 export function unloadSounds() {
-  const keys = Object.keys(pools) as SoundKey[];
-  for (const key of keys) {
-    const pool = pools[key];
-    if (!pool) continue;
-
-    pool.players.forEach((player) => {
-      try {
-        player.remove();
-      } catch {}
-    });
-    delete pools[key];
-  }
   isInitialized = false;
 }
